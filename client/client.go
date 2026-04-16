@@ -13,6 +13,7 @@ import (
 	"github.com/jeremyjsx/wallbit-go/services/apikey"
 	"github.com/jeremyjsx/wallbit-go/services/assets"
 	"github.com/jeremyjsx/wallbit-go/services/balance"
+	"github.com/jeremyjsx/wallbit-go/services/cards"
 	"github.com/jeremyjsx/wallbit-go/services/fees"
 	"github.com/jeremyjsx/wallbit-go/services/operations"
 	"github.com/jeremyjsx/wallbit-go/services/roboadvisor"
@@ -46,6 +47,8 @@ type Client struct {
 	Operations *operations.Service
 
 	RoboAdvisor *roboadvisor.Service
+
+	Cards *cards.Service
 }
 
 func NewClient(apiKey string, opts ...Option) (*Client, error) {
@@ -81,6 +84,7 @@ func NewClient(apiKey string, opts ...Option) (*Client, error) {
 	c.Assets = assets.NewService(c)
 	c.Operations = operations.NewService(c)
 	c.RoboAdvisor = roboadvisor.NewService(c)
+	c.Cards = cards.NewService(c)
 
 	return c, nil
 }
