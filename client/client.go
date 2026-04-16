@@ -16,6 +16,7 @@ import (
 	"github.com/jeremyjsx/wallbit-go/services/fees"
 	"github.com/jeremyjsx/wallbit-go/services/trades"
 	"github.com/jeremyjsx/wallbit-go/services/transactions"
+	"github.com/jeremyjsx/wallbit-go/services/wallets"
 )
 
 var ErrMissingAPIKey = errors.New("wallbit client requires a non-empty api key")
@@ -35,6 +36,8 @@ type Client struct {
 	Fees *fees.Service
 
 	AccountDetails *accountdetails.Service
+
+	Wallets *wallets.Service
 
 	Assets *assets.Service
 }
@@ -68,6 +71,7 @@ func NewClient(apiKey string, opts ...Option) (*Client, error) {
 	c.Trades = trades.NewService(c)
 	c.Fees = fees.NewService(c)
 	c.AccountDetails = accountdetails.NewService(c)
+	c.Wallets = wallets.NewService(c)
 	c.Assets = assets.NewService(c)
 
 	return c, nil

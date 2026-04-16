@@ -39,8 +39,8 @@ func TestServiceGet(t *testing.T) {
 	if out.Data.AccountHolder != "John Doe" {
 		t.Fatalf("unexpected account holder %q", out.Data.AccountHolder)
 	}
-	if out.Data.Extra["ach_type"] != "personal" {
-		t.Fatalf("expected extra ach_type=personal, got %v", out.Data.Extra["ach_type"])
+	if out.Data.Type != "checking" {
+		t.Fatalf("unexpected type %q", out.Data.Type)
 	}
 }
 
