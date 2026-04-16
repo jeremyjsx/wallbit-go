@@ -1,7 +1,10 @@
 package client
 
 import (
+	"context"
 	"errors"
+	"io"
+	"net/http"
 	"strings"
 )
 
@@ -39,4 +42,24 @@ func NewClient(apiKey string, opts ...Option) (*Client, error) {
 
 func (c *Client) Config() *Config {
 	return c.cfg
+}
+
+func (c *Client) newRequest(ctx context.Context, method string, path string, body io.Reader) (*http.Request, error) {
+	endpoint, err := c.cfg.BaseURL.Parse(path)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, method, endpoint.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("X-API-Key", c.apiKey)
+	req.Header.Set("User-Agent", c.cfg.UserAgent)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	return req, nil
 }
