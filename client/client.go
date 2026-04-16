@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
+	"github.com/jeremyjsx/wallbit-go/services/balance"
 )
 
 var ErrMissingAPIKey = errors.New("wallbit client requires a non-empty api key")
@@ -16,6 +17,8 @@ var ErrMissingAPIKey = errors.New("wallbit client requires a non-empty api key")
 type Client struct {
 	apiKey string
 	cfg    *Config
+
+	Balance *balance.Service
 }
 
 func NewClient(apiKey string, opts ...Option) (*Client, error) {
@@ -37,10 +40,13 @@ func NewClient(apiKey string, opts ...Option) (*Client, error) {
 		}
 	}
 
-	return &Client{
+	c := &Client{
 		apiKey: apiKey,
 		cfg:    cfg,
-	}, nil
+	}
+	c.Balance = balance.NewService(c)
+
+	return c, nil
 }
 
 func (c *Client) Config() *Config {
@@ -74,6 +80,10 @@ func (c *Client) send(ctx context.Context, method string, path string, body io.R
 	}
 
 	return c.do(req, dest)
+}
+
+func (c *Client) Send(ctx context.Context, method string, path string, body io.Reader, dest any) error {
+	return c.send(ctx, method, path, body, dest)
 }
 
 func (c *Client) do(req *http.Request, dest any) error {
