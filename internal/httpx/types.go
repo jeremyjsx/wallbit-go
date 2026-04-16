@@ -1,6 +1,10 @@
 package httpx
 
-import "time"
+import (
+	"context"
+	"io"
+	"time"
+)
 
 type Hook interface {
 	OnRequestStart(*RequestMeta)
@@ -21,6 +25,10 @@ type RetryPolicy struct {
 	MaxAttempts int
 	BaseDelay   time.Duration
 	MaxDelay    time.Duration
+}
+
+type Sender interface {
+	Send(ctx context.Context, method string, path string, body io.Reader, dest any) error
 }
 
 func DefaultRetryPolicy() RetryPolicy {
