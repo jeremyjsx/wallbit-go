@@ -20,8 +20,13 @@ func NewService(sender httpx.Sender) *Service {
 	return &Service{sender: sender}
 }
 
+type CheckingBalance struct {
+	Currency string  `json:"currency"`
+	Balance  float64 `json:"balance"`
+}
+
 type CheckingBalanceResponse struct {
-	Data []map[string]any `json:"data"`
+	Data []CheckingBalance `json:"data"`
 }
 
 type StockPosition struct {

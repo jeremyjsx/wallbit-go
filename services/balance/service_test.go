@@ -20,7 +20,7 @@ func TestServiceGetChecking(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"data":[{"currency":"USD","available_balance":100.5}]}`))
+		_, _ = w.Write([]byte(`{"data":[{"currency":"USD","balance":100.5}]}`))
 	}))
 	defer server.Close()
 
@@ -36,8 +36,11 @@ func TestServiceGetChecking(t *testing.T) {
 	if len(out.Data) != 1 {
 		t.Fatalf("expected one balance row, got %d", len(out.Data))
 	}
-	if out.Data[0]["currency"] != "USD" {
-		t.Fatalf("expected currency USD, got %v", out.Data[0]["currency"])
+	if out.Data[0].Currency != "USD" {
+		t.Fatalf("expected currency USD, got %q", out.Data[0].Currency)
+	}
+	if out.Data[0].Balance != 100.5 {
+		t.Fatalf("expected balance 100.5, got %v", out.Data[0].Balance)
 	}
 }
 

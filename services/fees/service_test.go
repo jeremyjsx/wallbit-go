@@ -47,13 +47,14 @@ func TestServiceGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-
-	row, ok := out.Data.(map[string]any)
-	if !ok {
-		t.Fatalf("expected data object, got %T", out.Data)
+	if out.Data.Empty {
+		t.Fatal("expected fee row, got empty data")
 	}
-	if row["fee_type"] != "TRADE" {
-		t.Fatalf("expected fee_type TRADE, got %v", row["fee_type"])
+	if out.Data.Row == nil {
+		t.Fatal("expected non-nil fee setting")
+	}
+	if out.Data.Row.FeeType != "TRADE" {
+		t.Fatalf("expected fee_type TRADE, got %q", out.Data.Row.FeeType)
 	}
 }
 
@@ -76,8 +77,32 @@ func TestServiceGetReturnsEmptyDataArray(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if data, ok := out.Data.([]any); !ok || len(data) != 0 {
-		t.Fatalf("expected empty data array, got %#v", out.Data)
+	if !out.Data.Empty {
+		t.Fatalf("expected empty data flag, got %#v", out.Data)
+	}
+	if out.Data.Row != nil {
+		t.Fatalf("expected nil row for empty data, got %+v", out.Data.Row)
+	}
+}
+
+func TestServiceGetRejectsNonEmptyDataArray(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data":[{"fee_type":"TRADE"}]}`))
+	}))
+	defer server.Close()
+
+	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	_, err = c.Fees.Get(context.Background(), fees.GetRequest{Type: "TRADE"})
+	if err == nil {
+		t.Fatal("expected error for non-empty data array")
 	}
 }
 

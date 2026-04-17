@@ -34,7 +34,7 @@ func TestServiceList(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"data":{"data":[{"uuid":"abc","type":"TRADE","source_amount":100,"dest_amount":100,"status":"COMPLETED","created_at":"2024-01-01T00:00:00Z","source_currency":{"code":"USD","alias":"USD"},"dest_currency":{"code":"USD","alias":"USD"}}],"pages":5,"current_page":2,"count":50}}`))
+		_, _ = w.Write([]byte(`{"data":{"data":[{"uuid":"abc","type":"TRADE","external_address":"Juan Perez","source_amount":100,"dest_amount":100,"status":"COMPLETED","created_at":"2024-01-01T00:00:00Z","source_currency":{"code":"USD","alias":"USD"},"dest_currency":{"code":"USD","alias":"USD"}},{"uuid":"def","type":"WITHDRAWAL_LOCAL","external_address":null,"source_amount":50,"dest_amount":50,"status":"PENDING","created_at":"2024-01-02T00:00:00Z","source_currency":{"code":"USD","alias":"USD"},"dest_currency":{"code":"USD","alias":"USD"}}],"pages":5,"current_page":2,"count":50}}`))
 	}))
 	defer server.Close()
 
@@ -58,11 +58,20 @@ func TestServiceList(t *testing.T) {
 	if out.Data.CurrentPage != 2 {
 		t.Fatalf("expected current_page=2, got %d", out.Data.CurrentPage)
 	}
-	if len(out.Data.Data) != 1 {
-		t.Fatalf("expected one transaction, got %d", len(out.Data.Data))
+	if len(out.Data.Data) != 2 {
+		t.Fatalf("expected two transactions, got %d", len(out.Data.Data))
 	}
 	if out.Data.Data[0].UUID != "abc" {
 		t.Fatalf("unexpected uuid %q", out.Data.Data[0].UUID)
+	}
+	if out.Data.Data[0].ExternalAddress == nil || *out.Data.Data[0].ExternalAddress != "Juan Perez" {
+		t.Fatalf("unexpected external_address in first transaction: %v", out.Data.Data[0].ExternalAddress)
+	}
+	if out.Data.Data[1].UUID != "def" {
+		t.Fatalf("unexpected uuid %q", out.Data.Data[1].UUID)
+	}
+	if out.Data.Data[1].ExternalAddress != nil {
+		t.Fatalf("expected nil external_address in second transaction, got %v", out.Data.Data[1].ExternalAddress)
 	}
 }
 

@@ -40,7 +40,7 @@ type CurrencyRef struct {
 type Transaction struct {
 	UUID            string      `json:"uuid"`
 	Type            string      `json:"type"`
-	ExternalAddress string      `json:"external_address"`
+	ExternalAddress *string     `json:"external_address"`
 	SourceCurrency  CurrencyRef `json:"source_currency"`
 	DestCurrency    CurrencyRef `json:"dest_currency"`
 	SourceAmount    float64     `json:"source_amount"`
