@@ -2,6 +2,7 @@ package assets
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -55,6 +56,19 @@ type ListResponse struct {
 	Pages       int     `json:"pages"`
 	CurrentPage int     `json:"current_page"`
 	Count       int     `json:"count"`
+}
+
+type GetResponse struct {
+	Data Asset `json:"data"`
+}
+
+func (s *Service) Get(ctx context.Context, symbol string) (*GetResponse, error) {
+	path := fmt.Sprintf("%s/%s", listPath, url.PathEscape(symbol))
+	out := &GetResponse{}
+	if err := s.sender.Send(ctx, http.MethodGet, path, nil, out); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (s *Service) List(ctx context.Context, req *ListRequest) (*ListResponse, error) {

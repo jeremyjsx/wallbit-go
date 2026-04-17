@@ -5,12 +5,72 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/jeremyjsx/wallbit-go/client"
 	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
 	"github.com/jeremyjsx/wallbit-go/services/assets"
 )
+
+func TestServiceGet(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Fatalf("unexpected method %q", r.Method)
+		}
+		wantPath := "/api/public/v1/assets/" + url.PathEscape("BRK.B")
+		if r.URL.Path != wantPath {
+			t.Fatalf("unexpected path %q, want %q", r.URL.Path, wantPath)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data":{"symbol":"BRK.B","name":"Berkshire Hathaway Inc.","price":412.3,"logo_url":"https://example.com/BRK.B.svg"}}`))
+	}))
+	defer server.Close()
+
+	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out, err := c.Assets.Get(context.Background(), "BRK.B")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Data.Symbol != "BRK.B" {
+		t.Fatalf("unexpected symbol %q", out.Data.Symbol)
+	}
+	if out.Data.Name != "Berkshire Hathaway Inc." {
+		t.Fatalf("unexpected name %q", out.Data.Name)
+	}
+}
+
+func TestServiceGetNotFound(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"message":"Asset not found","code":"NOT_FOUND"}`))
+	}))
+	defer server.Close()
+
+	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	_, err = c.Assets.Get(context.Background(), "NOPE")
+	var sdkErr *errorsx.SDKError
+	if !errors.As(err, &sdkErr) {
+		t.Fatalf("expected SDKError, got %v", err)
+	}
+	if sdkErr.StatusCode != http.StatusNotFound {
+		t.Fatalf("unexpected status %d", sdkErr.StatusCode)
+	}
+}
 
 func TestServiceList(t *testing.T) {
 	t.Parallel()
