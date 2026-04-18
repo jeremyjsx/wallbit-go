@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/jeremyjsx/wallbit-go/internal/httpx"
 )
@@ -17,6 +19,9 @@ const (
 	StatusActive    = "ACTIVE"
 	StatusSuspended = "SUSPENDED"
 )
+
+// ErrEmptyCardUUID is returned by [Service.Block] and [Service.Unblock] when cardUUID is empty or whitespace-only.
+var ErrEmptyCardUUID = errors.New("cards: card uuid is required")
 
 type Service struct {
 	sender httpx.Sender
@@ -69,6 +74,9 @@ func (s *Service) Unblock(ctx context.Context, cardUUID string) (*UpdateStatusRe
 }
 
 func (s *Service) updateStatus(ctx context.Context, cardUUID string, status string) (*UpdateStatusResponse, error) {
+	if strings.TrimSpace(cardUUID) == "" {
+		return nil, ErrEmptyCardUUID
+	}
 	payload, err := json.Marshal(updateStatusRequest{Status: status})
 	if err != nil {
 		return nil, err

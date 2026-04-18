@@ -13,6 +13,24 @@ import (
 	"github.com/jeremyjsx/wallbit-go/services/cards"
 )
 
+func TestServiceBlockRejectsEmptyCardUUID(t *testing.T) {
+	t.Parallel()
+
+	c, err := client.NewClient("test-key", client.WithBaseURL("http://127.0.0.1:9"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	_, err = c.Cards.Block(context.Background(), "")
+	if !errors.Is(err, cards.ErrEmptyCardUUID) {
+		t.Fatalf("expected ErrEmptyCardUUID, got %v", err)
+	}
+	_, err = c.Cards.Unblock(context.Background(), "  ")
+	if !errors.Is(err, cards.ErrEmptyCardUUID) {
+		t.Fatalf("expected ErrEmptyCardUUID for whitespace, got %v", err)
+	}
+}
+
 func TestServiceList(t *testing.T) {
 	t.Parallel()
 

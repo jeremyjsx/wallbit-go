@@ -2,15 +2,20 @@ package assets
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/jeremyjsx/wallbit-go/internal/httpx"
 )
 
 const listPath = "/api/public/v1/assets"
+
+// ErrEmptySymbol is returned by [Service.Get] when symbol is empty or whitespace-only.
+var ErrEmptySymbol = errors.New("assets: symbol is required")
 
 type Service struct {
 	sender httpx.Sender
@@ -63,6 +68,9 @@ type GetResponse struct {
 }
 
 func (s *Service) Get(ctx context.Context, symbol string) (*GetResponse, error) {
+	if strings.TrimSpace(symbol) == "" {
+		return nil, ErrEmptySymbol
+	}
 	path := fmt.Sprintf("%s/%s", listPath, url.PathEscape(symbol))
 	out := &GetResponse{}
 	if err := s.sender.Send(ctx, http.MethodGet, path, nil, out); err != nil {

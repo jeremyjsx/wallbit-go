@@ -13,6 +13,24 @@ import (
 	"github.com/jeremyjsx/wallbit-go/services/assets"
 )
 
+func TestServiceGetRejectsEmptySymbol(t *testing.T) {
+	t.Parallel()
+
+	c, err := client.NewClient("test-key", client.WithBaseURL("http://127.0.0.1:9"))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	_, err = c.Assets.Get(context.Background(), "")
+	if !errors.Is(err, assets.ErrEmptySymbol) {
+		t.Fatalf("expected ErrEmptySymbol, got %v", err)
+	}
+	_, err = c.Assets.Get(context.Background(), "  \t ")
+	if !errors.Is(err, assets.ErrEmptySymbol) {
+		t.Fatalf("expected ErrEmptySymbol for whitespace, got %v", err)
+	}
+}
+
 func TestServiceGet(t *testing.T) {
 	t.Parallel()
 
