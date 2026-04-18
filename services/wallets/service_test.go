@@ -7,9 +7,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jeremyjsx/wallbit-go/client"
 	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
 	"github.com/jeremyjsx/wallbit-go/services/wallets"
+	"github.com/jeremyjsx/wallbit-go/wallbit"
 )
 
 func TestServiceGet(t *testing.T) {
@@ -31,7 +31,7 @@ func TestServiceGet(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -64,7 +64,7 @@ func TestServiceGetWithoutFilters(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -88,7 +88,7 @@ func TestServiceGetReturnsAPIError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

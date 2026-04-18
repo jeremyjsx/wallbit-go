@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jeremyjsx/wallbit-go/client"
 	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
 	"github.com/jeremyjsx/wallbit-go/services/fees"
+	"github.com/jeremyjsx/wallbit-go/wallbit"
 )
 
 func TestServiceGet(t *testing.T) {
@@ -38,7 +38,7 @@ func TestServiceGet(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -71,7 +71,7 @@ func TestServiceGetNullTier(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestServiceGetReturnsEmptyDataArray(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestServiceGetRejectsNonEmptyDataArray(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -143,7 +143,7 @@ func TestServiceGetReturnsAPIError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

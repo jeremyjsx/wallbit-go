@@ -8,15 +8,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jeremyjsx/wallbit-go/client"
 	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
 	"github.com/jeremyjsx/wallbit-go/services/cards"
+	"github.com/jeremyjsx/wallbit-go/wallbit"
 )
 
 func TestServiceBlockRejectsEmptyCardUUID(t *testing.T) {
 	t.Parallel()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL("http://127.0.0.1:9"))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL("http://127.0.0.1:9"))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -50,7 +50,7 @@ func TestServiceList(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestServiceListEmpty(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -107,7 +107,7 @@ func TestServiceListReturnsAPIError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestServiceBlock(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -175,7 +175,7 @@ func TestServiceBlockReturnsAPIError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestServiceUnblock(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -243,7 +243,7 @@ func TestServiceUnblockReturnsAPIError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
