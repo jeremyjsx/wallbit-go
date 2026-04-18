@@ -26,10 +26,10 @@ type GetRequest struct {
 }
 
 type FeeSetting struct {
-	FeeType       string `json:"fee_type"`
-	Tier          string `json:"tier"`
-	PercentageFee string `json:"percentage_fee"`
-	FixedFeeUSD   string `json:"fixed_fee_usd"`
+	FeeType       string  `json:"fee_type"`
+	Tier          *string `json:"tier"`
+	PercentageFee string  `json:"percentage_fee"`
+	FixedFeeUSD   string  `json:"fixed_fee_usd"`
 }
 
 type GetData struct {

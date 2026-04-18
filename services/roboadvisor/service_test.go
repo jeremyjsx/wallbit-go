@@ -53,6 +53,33 @@ func TestServiceGetBalance(t *testing.T) {
 	}
 }
 
+func TestServiceGetBalanceNullRiskProfile(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data":[{"id":2,"label":null,"category":null,"portfolio_type":"CHEST","balance":100,"portfolio_value":0,"cash":100,"cash_available_withdrawal":100,"risk_profile":null,"performance":{"net_deposits":0,"net_profits":0,"total_deposits":0,"total_withdrawals":0},"assets":[],"allocation":{"cash":100,"securities":0},"has_pending_transactions":false}]}`))
+	}))
+	defer server.Close()
+
+	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out, err := c.RoboAdvisor.GetBalance(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out.Data) != 1 {
+		t.Fatalf("expected one portfolio, got %d", len(out.Data))
+	}
+	if out.Data[0].RiskProfile != nil {
+		t.Fatalf("expected nil risk_profile, got %+v", out.Data[0].RiskProfile)
+	}
+}
+
 func TestServiceGetBalanceReturnsAPIError(t *testing.T) {
 	t.Parallel()
 

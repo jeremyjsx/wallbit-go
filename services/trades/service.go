@@ -28,7 +28,7 @@ type CreateRequest struct {
 	Shares      *float64 `json:"shares,omitempty"`
 	StopPrice   *float64 `json:"stop_price,omitempty"`
 	LimitPrice  *float64 `json:"limit_price,omitempty"`
-	TimeInForce string   `json:"time_in_force,omitempty"`
+	TimeInForce *string  `json:"time_in_force,omitempty"`
 }
 
 type Trade struct {

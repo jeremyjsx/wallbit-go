@@ -56,6 +56,33 @@ func TestServiceGet(t *testing.T) {
 	if out.Data.Row.FeeType != "TRADE" {
 		t.Fatalf("expected fee_type TRADE, got %q", out.Data.Row.FeeType)
 	}
+	if out.Data.Row.Tier == nil || *out.Data.Row.Tier != "LEVEL1" {
+		t.Fatalf("expected tier LEVEL1, got %v", out.Data.Row.Tier)
+	}
+}
+
+func TestServiceGetNullTier(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data":{"fee_type":"TRADE","tier":null,"percentage_fee":"0.005","fixed_fee_usd":"0.00"}}`))
+	}))
+	defer server.Close()
+
+	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	out, err := c.Fees.Get(context.Background(), fees.GetRequest{Type: "TRADE"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if out.Data.Row == nil || out.Data.Row.Tier != nil {
+		t.Fatalf("expected nil tier, got %v", out.Data.Row.Tier)
+	}
 }
 
 func TestServiceGetReturnsEmptyDataArray(t *testing.T) {

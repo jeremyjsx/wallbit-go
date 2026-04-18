@@ -11,7 +11,7 @@ type SDKError struct {
 	StatusCode int
 	Code       string
 	Message    string
-	Details    any
+	Details    json.RawMessage
 	RequestID  string
 	RawBody    string
 }
@@ -52,10 +52,10 @@ func IsValidationError(err error) bool {
 }
 
 type apiErrorEnvelope struct {
-	Error   string `json:"error"`
-	Message string `json:"message"`
-	Code    string `json:"code"`
-	Details any    `json:"details"`
+	Error   string          `json:"error"`
+	Message string          `json:"message"`
+	Code    string          `json:"code"`
+	Details json.RawMessage `json:"details"`
 }
 
 func FromHTTP(statusCode int, requestID string, rawBody []byte) *SDKError {

@@ -62,6 +62,52 @@ func TestServiceCreate(t *testing.T) {
 	}
 }
 
+func TestServiceCreateLimitWithTimeInForce(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var in trades.CreateRequest
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			t.Fatalf("unexpected decode error: %v", err)
+		}
+		if in.OrderType != "LIMIT" {
+			t.Fatalf("expected LIMIT, got %q", in.OrderType)
+		}
+		if in.TimeInForce == nil || *in.TimeInForce != "DAY" {
+			t.Fatalf("expected time_in_force DAY, got %v", in.TimeInForce)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data":{"symbol":"AAPL","direction":"BUY","amount":0,"shares":1,"status":"REQUESTED","order_type":"LIMIT","limit_price":150,"time_in_force":"DAY","created_at":"2024-01-01T00:00:00Z","updated_at":"2024-01-01T00:00:00Z"}}`))
+	}))
+	defer server.Close()
+
+	c, err := client.NewClient("test-key", client.WithBaseURL(server.URL))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	limit := 150.0
+	tif := "DAY"
+	_, err = c.Trades.Create(context.Background(), trades.CreateRequest{
+		Symbol:      "AAPL",
+		Direction:   "BUY",
+		Currency:    "USD",
+		OrderType:   "LIMIT",
+		Shares:      ptrFloat(1),
+		LimitPrice:  &limit,
+		TimeInForce: &tif,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func ptrFloat(v float64) *float64 {
+	return &v
+}
+
 func TestServiceCreateReturnsAPIError(t *testing.T) {
 	t.Parallel()
 
