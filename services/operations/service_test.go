@@ -38,7 +38,7 @@ func TestServiceInternal(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestServiceDepositInvestment(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestServiceWithdrawInvestment(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -146,7 +146,7 @@ func TestServiceInternalReturnsAPIError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

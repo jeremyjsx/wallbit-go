@@ -16,7 +16,7 @@ import (
 func TestServiceGetRejectsEmptySymbol(t *testing.T) {
 	t.Parallel()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL("http://127.0.0.1:9"))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL("http://127.0.0.1:9"), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestServiceGet(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestServiceGetNotFound(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -118,7 +118,7 @@ func TestServiceList(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -164,7 +164,7 @@ func TestServiceListWithoutFilters(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -188,7 +188,7 @@ func TestServiceListReturnsAPIError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL))
+	c, err := wallbit.NewClient("test-key", wallbit.WithBaseURL(server.URL), wallbit.WithInsecureHTTPForTesting())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -2,6 +2,7 @@ package wallbit
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -33,6 +34,7 @@ func TestNewClientAndOptions(t *testing.T) {
 	c, err := NewClient(
 		"test-key",
 		WithBaseURL(server.URL),
+		WithInsecureHTTPForTesting(),
 		WithUserAgent("wallbit-test"),
 		WithRetryPolicy(RetryPolicy{MaxAttempts: 1, BaseDelay: time.Millisecond, MaxDelay: 10 * time.Millisecond}),
 		WithHook(hook),
@@ -46,5 +48,43 @@ func TestNewClientAndOptions(t *testing.T) {
 	}
 	if hook.started != 1 || hook.done != 1 {
 		t.Fatalf("unexpected hook counters: started=%d done=%d", hook.started, hook.done)
+	}
+}
+
+func TestWithBaseURLRejectsHTTPByDefault(t *testing.T) {
+	t.Parallel()
+
+	_, err := NewClient("test-key", WithBaseURL("http://127.0.0.1:8080"))
+	if !errors.Is(err, ErrInsecureBaseURL) {
+		t.Fatalf("expected ErrInsecureBaseURL, got %v", err)
+	}
+}
+
+func TestClientBlocksCrossHostRedirect(t *testing.T) {
+	t.Parallel()
+
+	evil := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatalf("redirect target should not be reached; got %s", r.URL.String())
+	}))
+	defer evil.Close()
+
+	origin := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, evil.URL+"/steal", http.StatusFound)
+	}))
+	defer origin.Close()
+
+	c, err := NewClient(
+		"test-key",
+		WithBaseURL(origin.URL),
+		WithInsecureHTTPForTesting(),
+		WithRetryPolicy(RetryPolicy{MaxAttempts: 1, BaseDelay: time.Millisecond, MaxDelay: time.Millisecond}),
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	_, err = c.Balance.GetChecking(context.Background())
+	if err == nil {
+		t.Fatal("expected error due to blocked cross-host redirect")
 	}
 }

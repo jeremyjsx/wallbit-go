@@ -74,6 +74,10 @@ func NewClient(apiKey string, opts ...Option) (*Client, error) {
 			return nil, err
 		}
 	}
+	if err := validateBaseURL(cfg); err != nil {
+		return nil, err
+	}
+	cfg = secureConfig(cfg)
 
 	c := &Client{
 		apiKey: strings.TrimSpace(apiKey),
@@ -99,6 +103,10 @@ func NewClientFromConfig(apiKey string, cfg *Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
+	if err := validateBaseURL(merged); err != nil {
+		return nil, err
+	}
+	merged = secureConfig(merged)
 	c := &Client{
 		apiKey: strings.TrimSpace(apiKey),
 		cfg:    merged,
@@ -227,4 +235,26 @@ type senderAdapter struct {
 
 func (s senderAdapter) Send(ctx context.Context, method string, path string, body io.Reader, dest any) error {
 	return s.client.send(ctx, method, path, body, dest)
+}
+
+func secureConfig(cfg *Config) *Config {
+	if cfg.HTTPClient == nil {
+		cfg.HTTPClient = &http.Client{Timeout: 30 * time.Second}
+	}
+	cloned := *cfg.HTTPClient
+	prevRedirect := cloned.CheckRedirect
+	cloned.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) > 0 {
+			origin := via[0].URL
+			if origin != nil && req.URL != nil && !strings.EqualFold(req.URL.Host, origin.Host) {
+				return http.ErrUseLastResponse
+			}
+		}
+		if prevRedirect != nil {
+			return prevRedirect(req, via)
+		}
+		return nil
+	}
+	cfg.HTTPClient = &cloned
+	return cfg
 }
