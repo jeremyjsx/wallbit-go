@@ -22,7 +22,7 @@ func TestJitterBounds(t *testing.T) {
 
 	for _, d := range cases {
 		lo := d / 2
-		for i := 0; i < samples; i++ {
+		for range samples {
 			got := jitter(d)
 			if got < lo || got > d {
 				t.Fatalf("d=%s: jitter returned %s, want within [%s, %s]", d, got, lo, d)
@@ -52,7 +52,7 @@ func TestJitterVariesAcrossCalls(t *testing.T) {
 	// rand.Int64N for a constant or forgetting to apply jitter entirely.
 	const d = time.Second
 	seen := make(map[time.Duration]struct{})
-	for i := 0; i < 32; i++ {
+	for range 32 {
 		seen[jitter(d)] = struct{}{}
 	}
 	if len(seen) < 2 {

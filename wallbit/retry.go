@@ -77,7 +77,7 @@ func (c *Client) retryWaitBeforeNextAttempt(res *http.Response, apiErr *Error, f
 	}
 
 	d := base
-	for i := 0; i < failureIndex; i++ {
+	for range failureIndex {
 		next := d * 2
 		if next > maxD {
 			d = maxD

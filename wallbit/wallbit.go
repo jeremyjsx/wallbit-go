@@ -177,14 +177,19 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 	ctx := req.Context()
 	max := c.maxAttempts()
 
-	for attempt := 0; attempt < max; attempt++ {
+	// attempt is 0-indexed because the retry bookkeeping (failureIndex in
+	// retryWaitBeforeNextAttempt) expects a 0-based counter; the
+	// user-visible Attempt field on RequestMeta/ResponseMeta is derived by
+	// adding one so hooks see a natural "attempt 1, 2, 3" sequence.
+	for attempt := range max {
+		attemptNumber := attempt + 1
 		reqTry := req.Clone(ctx)
 		if h := c.cfg.Hook; h != nil {
 			path := ""
 			if reqTry.URL != nil {
 				path = reqTry.URL.Path
 			}
-			h.OnRequestStart(&RequestMeta{Method: reqTry.Method, Path: path})
+			h.OnRequestStart(&RequestMeta{Method: reqTry.Method, Path: path, Attempt: attemptNumber})
 		}
 
 		start := time.Now()
@@ -196,7 +201,7 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 			statusCode = res.StatusCode
 		}
 		if h := c.cfg.Hook; h != nil {
-			h.OnRequestDone(&ResponseMeta{StatusCode: statusCode, Duration: dur})
+			h.OnRequestDone(&ResponseMeta{StatusCode: statusCode, Duration: dur, Attempt: attemptNumber})
 		}
 
 		if err != nil {

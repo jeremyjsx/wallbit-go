@@ -77,17 +77,29 @@ type Hook interface {
 
 // RequestMeta is the context passed to [Hook.OnRequestStart] for a single
 // HTTP attempt. Path is the URL path (without the base URL or query string).
+//
+// Attempt is 1-indexed: Attempt == 1 is the original request, Attempt == 2
+// is the first retry, and so on up to [RetryPolicy.MaxAttempts]. Hooks use
+// this to distinguish retries from first attempts when emitting metrics;
+// mixing the two into a single latency histogram hides the backoff cost
+// and produces misleading p99 numbers.
 type RequestMeta struct {
-	Method string
-	Path   string
+	Method  string
+	Path    string
+	Attempt int
 }
 
 // ResponseMeta is the context passed to [Hook.OnRequestDone] for a single
 // HTTP attempt. StatusCode is 0 when the transport returned an error before
 // receiving a response.
+//
+// Attempt mirrors [RequestMeta.Attempt] so a hook holding only the
+// response meta can still tag metrics with the attempt number without
+// correlating callbacks.
 type ResponseMeta struct {
 	StatusCode int
 	Duration   time.Duration
+	Attempt    int
 }
 
 func defaultConfig() (*Config, error) {
