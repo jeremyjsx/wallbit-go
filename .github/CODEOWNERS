@@ -1,0 +1,9 @@
+# CODEOWNERS for wallbit-go.
+#
+# Every pull request is automatically reviewed by the repository
+# maintainer. Order matters: the last matching pattern wins, so
+# more specific paths below would override the catch-all above.
+#
+# Docs: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+
+* @jeremyjsx
