@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/jeremyjsx/wallbit-go/services/roboadvisor"
 	"github.com/jeremyjsx/wallbit-go/wallbit"
@@ -41,14 +42,14 @@ func TestServiceGetBalance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(out.Data) != 1 {
-		t.Fatalf("expected one portfolio, got %d", len(out.Data))
+	if len(out.Payload.Data) != 1 {
+		t.Fatalf("expected one portfolio, got %d", len(out.Payload.Data))
 	}
-	if out.Data[0].PortfolioType != "ROBOADVISOR" {
-		t.Fatalf("unexpected portfolio_type %q", out.Data[0].PortfolioType)
+	if out.Payload.Data[0].PortfolioType != "ROBOADVISOR" {
+		t.Fatalf("unexpected portfolio_type %q", out.Payload.Data[0].PortfolioType)
 	}
-	if out.Data[0].RiskProfile == nil || out.Data[0].RiskProfile.RiskLevel != 3 {
-		t.Fatalf("unexpected risk profile: %+v", out.Data[0].RiskProfile)
+	if out.Payload.Data[0].RiskProfile == nil || out.Payload.Data[0].RiskProfile.RiskLevel != 3 {
+		t.Fatalf("unexpected risk profile: %+v", out.Payload.Data[0].RiskProfile)
 	}
 }
 
@@ -71,11 +72,11 @@ func TestServiceGetBalanceNullRiskProfile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(out.Data) != 1 {
-		t.Fatalf("expected one portfolio, got %d", len(out.Data))
+	if len(out.Payload.Data) != 1 {
+		t.Fatalf("expected one portfolio, got %d", len(out.Payload.Data))
 	}
-	if out.Data[0].RiskProfile != nil {
-		t.Fatalf("expected nil risk_profile, got %+v", out.Data[0].RiskProfile)
+	if out.Payload.Data[0].RiskProfile != nil {
+		t.Fatalf("expected nil risk_profile, got %+v", out.Payload.Data[0].RiskProfile)
 	}
 }
 
@@ -145,11 +146,15 @@ func TestServiceDeposit(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.Type != "ROBOADVISOR_DEPOSIT" {
-		t.Fatalf("unexpected transaction type %q", out.Data.Type)
+	if out.Payload.Data.Type != "ROBOADVISOR_DEPOSIT" {
+		t.Fatalf("unexpected transaction type %q", out.Payload.Data.Type)
 	}
-	if out.Data.Status != "PENDING" {
-		t.Fatalf("unexpected status %q", out.Data.Status)
+	if out.Payload.Data.Status != "PENDING" {
+		t.Fatalf("unexpected status %q", out.Payload.Data.Status)
+	}
+	wantTime := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+	if !out.Payload.Data.CreatedAt.Equal(wantTime) {
+		t.Fatalf("CreatedAt: got %s, want %s", out.Payload.Data.CreatedAt, wantTime)
 	}
 }
 
@@ -223,11 +228,11 @@ func TestServiceWithdraw(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.Type != "ROBOADVISOR_WITHDRAW" {
-		t.Fatalf("unexpected transaction type %q", out.Data.Type)
+	if out.Payload.Data.Type != "ROBOADVISOR_WITHDRAW" {
+		t.Fatalf("unexpected transaction type %q", out.Payload.Data.Type)
 	}
-	if out.Data.Status != "PENDING" {
-		t.Fatalf("unexpected status %q", out.Data.Status)
+	if out.Payload.Data.Status != "PENDING" {
+		t.Fatalf("unexpected status %q", out.Payload.Data.Status)
 	}
 }
 

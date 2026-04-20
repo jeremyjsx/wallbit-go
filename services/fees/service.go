@@ -70,16 +70,6 @@ type GetResponse struct {
 	Data GetData `json:"data"`
 }
 
-func (s *Service) Get(ctx context.Context, req GetRequest) (*GetResponse, error) {
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &GetResponse{}
-	if err := s.sender.Send(ctx, http.MethodPost, getPath, bytes.NewBuffer(payload), out); err != nil {
-		return nil, err
-	}
-
-	return out, nil
+func (s *Service) Get(ctx context.Context, req GetRequest) (*transport.Response[GetResponse], error) {
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, getPath, req, &GetResponse{})
 }

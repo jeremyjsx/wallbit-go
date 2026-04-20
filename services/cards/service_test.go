@@ -58,17 +58,17 @@ func TestServiceList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(out.Data) != 2 {
-		t.Fatalf("expected 2 cards, got %d", len(out.Data))
+	if len(out.Payload.Data) != 2 {
+		t.Fatalf("expected 2 cards, got %d", len(out.Payload.Data))
 	}
-	if out.Data[0].UUID != "550e8400-e29b-41d4-a716-446655440000" || out.Data[0].CardLast4 != "1234" {
-		t.Fatalf("unexpected first card: %+v", out.Data[0])
+	if out.Payload.Data[0].UUID != "550e8400-e29b-41d4-a716-446655440000" || out.Payload.Data[0].CardLast4 != "1234" {
+		t.Fatalf("unexpected first card: %+v", out.Payload.Data[0])
 	}
-	if out.Data[0].Expiration == nil || *out.Data[0].Expiration != "2029-01-01" {
-		t.Fatalf("unexpected expiration: %v", out.Data[0].Expiration)
+	if out.Payload.Data[0].Expiration == nil || *out.Payload.Data[0].Expiration != "2029-01-01" {
+		t.Fatalf("unexpected expiration: %v", out.Payload.Data[0].Expiration)
 	}
-	if out.Data[1].Expiration != nil {
-		t.Fatalf("expected nil expiration, got %v", out.Data[1].Expiration)
+	if out.Payload.Data[1].Expiration != nil {
+		t.Fatalf("expected nil expiration, got %v", out.Payload.Data[1].Expiration)
 	}
 }
 
@@ -91,8 +91,8 @@ func TestServiceListEmpty(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(out.Data) != 0 {
-		t.Fatalf("expected empty list, got %d", len(out.Data))
+	if len(out.Payload.Data) != 0 {
+		t.Fatalf("expected empty list, got %d", len(out.Payload.Data))
 	}
 }
 
@@ -156,11 +156,11 @@ func TestServiceBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.UUID != cardUUID {
-		t.Fatalf("expected uuid %q, got %q", cardUUID, out.Data.UUID)
+	if out.Payload.Data.UUID != cardUUID {
+		t.Fatalf("expected uuid %q, got %q", cardUUID, out.Payload.Data.UUID)
 	}
-	if out.Data.Status != cards.StatusSuspended {
-		t.Fatalf("expected status %q, got %q", cards.StatusSuspended, out.Data.Status)
+	if out.Payload.Data.Status != cards.StatusSuspended {
+		t.Fatalf("expected status %q, got %q", cards.StatusSuspended, out.Payload.Data.Status)
 	}
 }
 
@@ -224,11 +224,11 @@ func TestServiceUnblock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.UUID != cardUUID {
-		t.Fatalf("expected uuid %q, got %q", cardUUID, out.Data.UUID)
+	if out.Payload.Data.UUID != cardUUID {
+		t.Fatalf("expected uuid %q, got %q", cardUUID, out.Payload.Data.UUID)
 	}
-	if out.Data.Status != cards.StatusActive {
-		t.Fatalf("expected status %q, got %q", cards.StatusActive, out.Data.Status)
+	if out.Payload.Data.Status != cards.StatusActive {
+		t.Fatalf("expected status %q, got %q", cards.StatusActive, out.Payload.Data.Status)
 	}
 }
 

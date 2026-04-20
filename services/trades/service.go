@@ -1,10 +1,9 @@
 package trades
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/jeremyjsx/wallbit-go/transport"
 )
@@ -41,23 +40,14 @@ type Trade struct {
 	LimitPrice  *float64 `json:"limit_price"`
 	StopPrice   *float64 `json:"stop_price"`
 	TimeInForce *string  `json:"time_in_force"`
-	CreatedAt   string   `json:"created_at"`
-	UpdatedAt   string   `json:"updated_at"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type CreateResponse struct {
 	Data Trade `json:"data"`
 }
 
-func (s *Service) Create(ctx context.Context, req CreateRequest) (*CreateResponse, error) {
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &CreateResponse{}
-	if err := s.sender.Send(ctx, http.MethodPost, createPath, bytes.NewBuffer(payload), out); err != nil {
-		return nil, err
-	}
-	return out, nil
+func (s *Service) Create(ctx context.Context, req CreateRequest) (*transport.Response[CreateResponse], error) {
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, createPath, req, &CreateResponse{})
 }

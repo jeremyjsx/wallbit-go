@@ -1,0 +1,58 @@
+version: "2"
+
+run:
+  go: "1.23"
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - revive
+    - gosec
+    - ineffassign
+    - unused
+    - misspell
+    - unconvert
+    - nolintlint
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - fmt.Fprint
+        - fmt.Fprintln
+        - fmt.Fprintf
+    revive:
+      rules:
+        - name: exported
+          disabled: false
+          arguments:
+            - "disableStutteringCheck"
+        - name: package-comments
+        - name: var-naming
+        - name: indent-error-flow
+        - name: errorf
+        - name: context-as-argument
+        - name: context-keys-type
+    gosec:
+      excludes:
+        # G104 (errors unhandled) is already covered by errcheck with a
+        # better-tuned allowlist.
+        - G104
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - revive
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/jeremyjsx/wallbit-go

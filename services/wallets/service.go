@@ -33,7 +33,7 @@ type GetResponse struct {
 	Data []Wallet `json:"data"`
 }
 
-func (s *Service) Get(ctx context.Context, req *GetRequest) (*GetResponse, error) {
+func (s *Service) Get(ctx context.Context, req *GetRequest) (*transport.Response[GetResponse], error) {
 	path := getPath
 	if req != nil {
 		q := url.Values{}
@@ -48,9 +48,5 @@ func (s *Service) Get(ctx context.Context, req *GetRequest) (*GetResponse, error
 		}
 	}
 
-	out := &GetResponse{}
-	if err := s.sender.Send(ctx, http.MethodGet, path, nil, out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return transport.SendJSON(ctx, s.sender, http.MethodGet, path, nil, &GetResponse{})
 }

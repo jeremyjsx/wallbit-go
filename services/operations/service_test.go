@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/jeremyjsx/wallbit-go/services/operations"
 	"github.com/jeremyjsx/wallbit-go/wallbit"
@@ -33,7 +34,7 @@ func TestServiceInternal(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"data":{"uuid":"tx_123","type":"INTERNAL_OPERATION","external_address":null,"source_currency":{"code":"USD","alias":"US Dollar"},"dest_currency":{"code":"USD","alias":"US Dollar"},"source_amount":100,"dest_amount":100,"status":"COMPLETED","created_at":"2024-01-01T00:00:00Z","comment":null}}`))
+		_, _ = w.Write([]byte(`{"uuid":"tx_123","type":"INTERNAL_OPERATION","external_address":null,"source_currency":{"code":"USD","alias":"US Dollar"},"dest_currency":{"code":"USD","alias":"US Dollar"},"source_amount":100,"dest_amount":100,"status":"COMPLETED","created_at":"2024-01-01T00:00:00Z","comment":null}`))
 	}))
 	defer server.Close()
 
@@ -51,11 +52,15 @@ func TestServiceInternal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.UUID != "tx_123" {
-		t.Fatalf("expected uuid tx_123, got %q", out.Data.UUID)
+	if out.Payload.UUID != "tx_123" {
+		t.Fatalf("expected uuid tx_123, got %q", out.Payload.UUID)
 	}
-	if out.Data.Status != "COMPLETED" {
-		t.Fatalf("expected status COMPLETED, got %q", out.Data.Status)
+	if out.Payload.Status != "COMPLETED" {
+		t.Fatalf("expected status COMPLETED, got %q", out.Payload.Status)
+	}
+	wantTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	if !out.Payload.CreatedAt.Equal(wantTime) {
+		t.Fatalf("CreatedAt: got %s, want %s", out.Payload.CreatedAt, wantTime)
 	}
 }
 
@@ -76,7 +81,7 @@ func TestServiceDepositInvestment(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"data":{"uuid":"tx_deposit","type":"INTERNAL_OPERATION","external_address":null,"source_currency":{"code":"USD","alias":"US Dollar"},"dest_currency":{"code":"USD","alias":"US Dollar"},"source_amount":25,"dest_amount":25,"status":"COMPLETED","created_at":"2024-01-01T00:00:00Z","comment":null}}`))
+		_, _ = w.Write([]byte(`{"uuid":"tx_deposit","type":"INTERNAL_OPERATION","external_address":null,"source_currency":{"code":"USD","alias":"US Dollar"},"dest_currency":{"code":"USD","alias":"US Dollar"},"source_amount":25,"dest_amount":25,"status":"COMPLETED","created_at":"2024-01-01T00:00:00Z","comment":null}`))
 	}))
 	defer server.Close()
 
@@ -92,8 +97,8 @@ func TestServiceDepositInvestment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.UUID != "tx_deposit" {
-		t.Fatalf("expected uuid tx_deposit, got %q", out.Data.UUID)
+	if out.Payload.UUID != "tx_deposit" {
+		t.Fatalf("expected uuid tx_deposit, got %q", out.Payload.UUID)
 	}
 }
 
@@ -114,7 +119,7 @@ func TestServiceWithdrawInvestment(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"data":{"uuid":"tx_withdraw","type":"INTERNAL_OPERATION","external_address":null,"source_currency":{"code":"USD","alias":"US Dollar"},"dest_currency":{"code":"USD","alias":"US Dollar"},"source_amount":15,"dest_amount":15,"status":"COMPLETED","created_at":"2024-01-01T00:00:00Z","comment":null}}`))
+		_, _ = w.Write([]byte(`{"uuid":"tx_withdraw","type":"INTERNAL_OPERATION","external_address":null,"source_currency":{"code":"USD","alias":"US Dollar"},"dest_currency":{"code":"USD","alias":"US Dollar"},"source_amount":15,"dest_amount":15,"status":"COMPLETED","created_at":"2024-01-01T00:00:00Z","comment":null}`))
 	}))
 	defer server.Close()
 
@@ -130,8 +135,8 @@ func TestServiceWithdrawInvestment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.UUID != "tx_withdraw" {
-		t.Fatalf("expected uuid tx_withdraw, got %q", out.Data.UUID)
+	if out.Payload.UUID != "tx_withdraw" {
+		t.Fatalf("expected uuid tx_withdraw, got %q", out.Payload.UUID)
 	}
 }
 

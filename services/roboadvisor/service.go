@@ -1,10 +1,9 @@
 package roboadvisor
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/jeremyjsx/wallbit-go/transport"
 )
@@ -94,7 +93,7 @@ type Transaction struct {
 	Type      string  `json:"type"`
 	Amount    float64 `json:"amount"`
 	Status    string  `json:"status"`
-	CreatedAt string  `json:"created_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type DepositResponse struct {
@@ -105,36 +104,14 @@ type WithdrawResponse struct {
 	Data Transaction `json:"data"`
 }
 
-func (s *Service) GetBalance(ctx context.Context) (*GetBalanceResponse, error) {
-	out := &GetBalanceResponse{}
-	if err := s.sender.Send(ctx, http.MethodGet, balancePath, nil, out); err != nil {
-		return nil, err
-	}
-	return out, nil
+func (s *Service) GetBalance(ctx context.Context) (*transport.Response[GetBalanceResponse], error) {
+	return transport.SendJSON(ctx, s.sender, http.MethodGet, balancePath, nil, &GetBalanceResponse{})
 }
 
-func (s *Service) Deposit(ctx context.Context, req DepositRequest) (*DepositResponse, error) {
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &DepositResponse{}
-	if err := s.sender.Send(ctx, http.MethodPost, depositPath, bytes.NewBuffer(payload), out); err != nil {
-		return nil, err
-	}
-	return out, nil
+func (s *Service) Deposit(ctx context.Context, req DepositRequest) (*transport.Response[DepositResponse], error) {
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, depositPath, req, &DepositResponse{})
 }
 
-func (s *Service) Withdraw(ctx context.Context, req WithdrawRequest) (*WithdrawResponse, error) {
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &WithdrawResponse{}
-	if err := s.sender.Send(ctx, http.MethodPost, withdrawPath, bytes.NewBuffer(payload), out); err != nil {
-		return nil, err
-	}
-	return out, nil
+func (s *Service) Withdraw(ctx context.Context, req WithdrawRequest) (*transport.Response[WithdrawResponse], error) {
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, withdrawPath, req, &WithdrawResponse{})
 }

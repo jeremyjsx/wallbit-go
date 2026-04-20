@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/jeremyjsx/wallbit-go/services/cards"
 	"github.com/jeremyjsx/wallbit-go/services/fees"
 	"github.com/jeremyjsx/wallbit-go/services/operations"
+	"github.com/jeremyjsx/wallbit-go/services/rates"
 	"github.com/jeremyjsx/wallbit-go/services/roboadvisor"
 	"github.com/jeremyjsx/wallbit-go/services/trades"
 	"github.com/jeremyjsx/wallbit-go/services/transactions"
@@ -24,6 +26,18 @@ import (
 )
 
 var ErrMissingAPIKey = errors.New("wallbit client requires a non-empty api key")
+
+// ErrResponseTooLarge is returned by the client when an HTTP response body
+// exceeds the configured byte cap (see [Config.MaxResponseBytes] and
+// [WithMaxResponseBytes]). The partial payload is discarded because a
+// truncated body cannot be distinguished from a well-formed short one by
+// the JSON decoder.
+var ErrResponseTooLarge = errors.New("wallbit client: response body exceeds configured size limit")
+
+// DefaultMaxResponseBytes is the cap applied to HTTP response bodies when
+// neither [Config.MaxResponseBytes] nor [WithMaxResponseBytes] supplies a
+// positive value.
+const DefaultMaxResponseBytes int64 = 10 << 20
 
 type Client struct {
 	apiKey string
@@ -51,6 +65,8 @@ type Client struct {
 	RoboAdvisor *roboadvisor.Service
 
 	Cards *cards.Service
+
+	Rates *rates.Service
 }
 
 func NewClient(apiKey string, opts ...Option) (*Client, error) {
@@ -125,6 +141,7 @@ func wireServices(c *Client) {
 	c.Operations = operations.NewService(c.sender)
 	c.RoboAdvisor = roboadvisor.NewService(c.sender)
 	c.Cards = cards.NewService(c.sender)
+	c.Rates = rates.NewService(c.sender)
 }
 
 func (c *Client) Config() *Config {
@@ -151,28 +168,24 @@ func (c *Client) newRequest(ctx context.Context, method string, path string, bod
 	return req, nil
 }
 
-func (c *Client) send(ctx context.Context, method string, path string, body io.Reader, dest any) error {
+func (c *Client) send(ctx context.Context, method string, path string, body io.Reader, dest any) (*transport.Metadata, error) {
 	req, err := c.newRequest(ctx, method, path, body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return c.do(req, dest)
 }
 
-func (c *Client) do(req *http.Request, dest any) error {
+func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 	ctx := req.Context()
 	max := c.maxAttempts()
 
-	for attempt := 0; attempt < max; attempt++ {
+	// attempt is 0-indexed; hooks see the 1-indexed value via attemptNumber.
+	for attempt := range max {
+		attemptNumber := attempt + 1
 		reqTry := req.Clone(ctx)
-		if h := c.cfg.Hook; h != nil {
-			path := ""
-			if reqTry.URL != nil {
-				path = reqTry.URL.Path
-			}
-			h.OnRequestStart(&RequestMeta{Method: reqTry.Method, Path: path})
-		}
+		c.emitRequestStart(reqTry, attemptNumber)
 
 		start := time.Now()
 		res, err := c.cfg.HTTPClient.Do(reqTry)
@@ -182,55 +195,106 @@ func (c *Client) do(req *http.Request, dest any) error {
 		if res != nil {
 			statusCode = res.StatusCode
 		}
-		if h := c.cfg.Hook; h != nil {
-			h.OnRequestDone(&ResponseMeta{StatusCode: statusCode, Duration: dur})
-		}
+		c.emitRequestDone(reqTry, statusCode, dur, attemptNumber)
 
 		if err != nil {
 			if attempt < max-1 && isIdempotentHTTPMethod(req.Method) {
 				wait := c.retryWaitBeforeNextAttempt(nil, nil, attempt)
 				if err := sleepContext(ctx, wait); err != nil {
-					return err
+					return nil, err
 				}
 				continue
 			}
-			return err
+			return nil, err
 		}
 
-		body, rerr := io.ReadAll(res.Body)
+		limit := c.maxResponseBytes()
+		body, rerr := io.ReadAll(io.LimitReader(res.Body, limit+1))
 		res.Body.Close()
 		if rerr != nil {
-			return rerr
+			return nil, rerr
+		}
+
+		requestID := res.Header.Get("X-Request-ID")
+		meta := &transport.Metadata{
+			StatusCode: statusCode,
+			Header:     res.Header,
+			RequestID:  requestID,
+		}
+
+		if int64(len(body)) > limit {
+			return meta, fmt.Errorf("%w: limit %d bytes", ErrResponseTooLarge, limit)
 		}
 
 		if statusCode >= 400 {
-			apiErr := ErrorFromHTTP(statusCode, res.Header.Get("X-Request-ID"), body)
+			apiErr := ErrorFromHTTP(statusCode, requestID, body)
 			if attempt < max-1 && isIdempotentHTTPMethod(req.Method) && IsRetryable(apiErr) {
 				wait := c.retryWaitBeforeNextAttempt(res, apiErr, attempt)
 				if err := sleepContext(ctx, wait); err != nil {
-					return err
+					return nil, err
 				}
 				continue
 			}
-			return apiErr
+			return meta, apiErr
 		}
 
-		if dest == nil || len(body) == 0 || statusCode == http.StatusNoContent {
-			return nil
+		if err := decodeBody(body, dest, statusCode); err != nil {
+			return meta, err
 		}
-		if err := json.Unmarshal(body, dest); err != nil {
-			return err
-		}
+		return meta, nil
+	}
+	return nil, errors.New("wallbit client: internal error: retry loop exited without return")
+}
+
+// emitRequestStart fires the OnRequestStart hook when one is configured.
+// Centralized so do() doesn't carry hook plumbing inline.
+func (c *Client) emitRequestStart(req *http.Request, attempt int) {
+	h := c.cfg.Hook
+	if h == nil {
+		return
+	}
+	path := ""
+	if req.URL != nil {
+		path = req.URL.Path
+	}
+	h.OnRequestStart(&RequestMeta{Method: req.Method, Path: path, Attempt: attempt})
+}
+
+// emitRequestDone fires the OnRequestDone hook when one is configured.
+func (c *Client) emitRequestDone(req *http.Request, statusCode int, dur time.Duration, attempt int) {
+	h := c.cfg.Hook
+	if h == nil {
+		return
+	}
+	path := ""
+	if req.URL != nil {
+		path = req.URL.Path
+	}
+	h.OnRequestDone(&ResponseMeta{
+		Method:     req.Method,
+		Path:       path,
+		StatusCode: statusCode,
+		Duration:   dur,
+		Attempt:    attempt,
+	})
+}
+
+// decodeBody unmarshals body into dest unless the response carries no
+// payload to decode (nil dest, empty body, or 204 No Content). io.ReadAll
+// already returned a usable slice when the LimitReader hit EOF, so a
+// length check is sufficient to cover both empty bodies and 204s.
+func decodeBody(body []byte, dest any, statusCode int) error {
+	if dest == nil || len(body) == 0 || statusCode == http.StatusNoContent {
 		return nil
 	}
-	return errors.New("wallbit client: internal error: retry loop exited without return")
+	return json.Unmarshal(body, dest)
 }
 
 type senderAdapter struct {
 	client *Client
 }
 
-func (s senderAdapter) Send(ctx context.Context, method string, path string, body io.Reader, dest any) error {
+func (s senderAdapter) Send(ctx context.Context, method string, path string, body io.Reader, dest any) (*transport.Metadata, error) {
 	return s.client.send(ctx, method, path, body, dest)
 }
 

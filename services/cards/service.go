@@ -1,9 +1,7 @@
 package cards
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -57,35 +55,22 @@ type UpdateStatusResponse struct {
 	Data CardStatus `json:"data"`
 }
 
-func (s *Service) List(ctx context.Context) (*ListResponse, error) {
-	out := &ListResponse{}
-	if err := s.sender.Send(ctx, http.MethodGet, listPath, nil, out); err != nil {
-		return nil, err
-	}
-	return out, nil
+func (s *Service) List(ctx context.Context) (*transport.Response[ListResponse], error) {
+	return transport.SendJSON(ctx, s.sender, http.MethodGet, listPath, nil, &ListResponse{})
 }
 
-func (s *Service) Block(ctx context.Context, cardUUID string) (*UpdateStatusResponse, error) {
+func (s *Service) Block(ctx context.Context, cardUUID string) (*transport.Response[UpdateStatusResponse], error) {
 	return s.updateStatus(ctx, cardUUID, StatusSuspended)
 }
 
-func (s *Service) Unblock(ctx context.Context, cardUUID string) (*UpdateStatusResponse, error) {
+func (s *Service) Unblock(ctx context.Context, cardUUID string) (*transport.Response[UpdateStatusResponse], error) {
 	return s.updateStatus(ctx, cardUUID, StatusActive)
 }
 
-func (s *Service) updateStatus(ctx context.Context, cardUUID string, status string) (*UpdateStatusResponse, error) {
+func (s *Service) updateStatus(ctx context.Context, cardUUID string, status string) (*transport.Response[UpdateStatusResponse], error) {
 	if strings.TrimSpace(cardUUID) == "" {
 		return nil, ErrEmptyCardUUID
 	}
-	payload, err := json.Marshal(updateStatusRequest{Status: status})
-	if err != nil {
-		return nil, err
-	}
-
-	out := &UpdateStatusResponse{}
 	path := fmt.Sprintf(updateStatusPathFormat, cardUUID)
-	if err := s.sender.Send(ctx, http.MethodPatch, path, bytes.NewBuffer(payload), out); err != nil {
-		return nil, err
-	}
-	return out, nil
+	return transport.SendJSON(ctx, s.sender, http.MethodPatch, path, updateStatusRequest{Status: status}, &UpdateStatusResponse{})
 }

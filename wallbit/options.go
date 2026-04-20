@@ -36,6 +36,12 @@ type Config struct {
 	// AllowInsecureHTTPForTesting permits HTTP (non-TLS) base URLs.
 	// Keep this false in production.
 	AllowInsecureHTTPForTesting bool
+	// MaxResponseBytes caps the number of bytes the client reads from any
+	// HTTP response body. When a response exceeds this bound the client
+	// returns [ErrResponseTooLarge] instead of a partial payload, so a
+	// hostile or buggy upstream cannot exhaust process memory. Zero or
+	// negative values select the default (see [DefaultMaxResponseBytes]).
+	MaxResponseBytes int64
 }
 
 // RetryPolicy controls how the [Client] retries idempotent requests on
@@ -71,17 +77,31 @@ type Hook interface {
 
 // RequestMeta is the context passed to [Hook.OnRequestStart] for a single
 // HTTP attempt. Path is the URL path (without the base URL or query string).
+//
+// Attempt is 1-indexed: Attempt == 1 is the original request, Attempt == 2
+// is the first retry, and so on up to [RetryPolicy.MaxAttempts]. Hooks use
+// this to distinguish retries from first attempts when emitting metrics;
+// mixing the two into a single latency histogram hides the backoff cost
+// and produces misleading p99 numbers.
 type RequestMeta struct {
-	Method string
-	Path   string
+	Method  string
+	Path    string
+	Attempt int
 }
 
 // ResponseMeta is the context passed to [Hook.OnRequestDone] for a single
 // HTTP attempt. StatusCode is 0 when the transport returned an error before
 // receiving a response.
+//
+// Method, Path and Attempt mirror the values passed to [Hook.OnRequestStart]
+// so a hook holding only the response meta can tag metrics or log a single
+// line per attempt without correlating callbacks.
 type ResponseMeta struct {
+	Method     string
+	Path       string
 	StatusCode int
 	Duration   time.Duration
+	Attempt    int
 }
 
 func defaultConfig() (*Config, error) {
@@ -95,9 +115,17 @@ func defaultConfig() (*Config, error) {
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		UserAgent:   "wallbit-go-sdk/0.1.0",
+		UserAgent:   defaultUserAgent(),
 		RetryPolicy: DefaultRetryPolicy(),
 	}, nil
+}
+
+// defaultUserAgent builds the canonical User-Agent used when the caller
+// does not override it via [WithUserAgent]. The format is
+// "wallbit-go-sdk/<version>"; the version comes from [resolveVersion].
+// See [Version] for the resolution precedence.
+func defaultUserAgent() string {
+	return "wallbit-go-sdk/" + resolveVersion()
 }
 
 // WithBaseURL overrides the default API base URL. By default only HTTPS is
@@ -178,6 +206,21 @@ func WithUserAgent(userAgent string) Option {
 	}
 }
 
+// WithMaxResponseBytes overrides the default cap on HTTP response body
+// size. The client reads up to n bytes from res.Body and returns
+// [ErrResponseTooLarge] if the server sends more, without decoding the
+// partial payload. Values <= 0 are ignored so that [DefaultMaxResponseBytes]
+// remains in effect; pass a very large value if you legitimately need to
+// consume multi-gigabyte responses.
+func WithMaxResponseBytes(n int64) Option {
+	return func(cfg *Config) error {
+		if n > 0 {
+			cfg.MaxResponseBytes = n
+		}
+		return nil
+	}
+}
+
 // WithRetryPolicy sets automatic retries for idempotent methods (GET, HEAD,
 // DELETE, OPTIONS, TRACE) on transport failures and on retryable API
 // responses (HTTP 429 and 5xx; see [IsRetryable]). POST, PATCH and PUT are
@@ -215,6 +258,9 @@ func mergeClientConfig(cfg *Config) (*Config, error) {
 	}
 	if cfg.RetryPolicy.MaxAttempts > 0 || cfg.RetryPolicy.BaseDelay > 0 || cfg.RetryPolicy.MaxDelay > 0 {
 		out.RetryPolicy = cfg.RetryPolicy
+	}
+	if cfg.MaxResponseBytes > 0 {
+		out.MaxResponseBytes = cfg.MaxResponseBytes
 	}
 	out.Hook = cfg.Hook
 	out.AllowInsecureHTTPForTesting = cfg.AllowInsecureHTTPForTesting

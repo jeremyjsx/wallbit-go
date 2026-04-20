@@ -44,7 +44,7 @@ func main() {
         log.Fatal(err)
     }
 
-    for _, b := range balance.Data {
+    for _, b := range balance.Payload.Data {
         fmt.Printf("%s: %.2f\n", b.Currency, b.Balance)
     }
 }
@@ -57,16 +57,27 @@ All endpoints documented in the Wallbit OpenAPI spec are covered.
 | Service          | Method                                | API endpoint                                        |
 | ---------------- | ------------------------------------- | --------------------------------------------------- |
 | `Balance`        | `GetChecking`, `GetStocks`            | `GET /balance/{checking,stocks}`                    |
-| `Transactions`   | `List`                                | `GET /transactions`                                 |
+| `Transactions`   | `List`, `ListAll`                     | `GET /transactions`                                 |
 | `Trades`         | `Create`                              | `POST /trades`                                      |
 | `Fees`           | `Get`                                 | `POST /fees`                                        |
 | `AccountDetails` | `Get`                                 | `GET /account-details`                              |
 | `Wallets`        | `Get`                                 | `GET /wallets`                                      |
-| `Assets`         | `List`, `Get`                         | `GET /assets`, `GET /assets/{symbol}`               |
+| `Assets`         | `List`, `ListAll`, `Get`              | `GET /assets`, `GET /assets/{symbol}`               |
 | `Operations`     | `Internal`, `DepositInvestment`, `WithdrawInvestment` | `POST /operations/internal`             |
 | `RoboAdvisor`    | `GetBalance`, `Deposit`, `Withdraw`   | `GET /roboadvisor/balance`, `POST /roboadvisor/{deposit,withdraw}` |
 | `Cards`          | `List`, `Block`, `Unblock`            | `GET /cards`, `PATCH /cards/{uuid}/status`          |
 | `APIKey`         | `Revoke`                              | `DELETE /api-key`                                   |
+| `Rates`          | `Get`                                 | `GET /rates?source_currency=&dest_currency=`        |
+
+`ListAll` returns a Go 1.23 `iter.Seq2[T, error]` that lazily walks every
+page:
+
+```go
+for tx, err := range client.Transactions.ListAll(ctx, nil) {
+    if err != nil { /* handle */ break }
+    fmt.Println(tx.UUID, tx.Status)
+}
+```
 
 ## Error handling
 
@@ -130,6 +141,17 @@ client, _ := wallbit.NewClient(apiKey, wallbit.WithHook(metricsHook{}))
 
 Hooks are called on every attempt (including retries) and must be safe for concurrent use.
 
+For structured logging, use the built-in `SlogHook` adapter:
+
+```go
+logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+client, _ := wallbit.NewClient(apiKey, wallbit.WithHook(wallbit.SlogHook(logger)))
+```
+
+Each attempt emits one structured record with `method`, `path`, `attempt`,
+`status` and `duration_ms`. Filter volume with the logger's level
+(`Debug` for start, `Info`/`Warn`/`Error` for done based on status).
+
 ## Custom HTTP client
 
 ```go
@@ -148,6 +170,21 @@ The SDK clones the provided `http.Client` and installs a `CheckRedirect` that bl
 - HTTPS is enforced for the base URL. Override with `wallbit.WithInsecureHTTPForTesting()` for local servers / `httptest`.
 - Cross-host redirects are blocked by default (see above).
 - Never commit your API key. Read it from an environment variable or secret manager.
+
+## Development
+
+```bash
+# One-time: install pinned linter and vuln scanner
+make install-tools
+
+# Before opening a PR: runs vet + lint + race tests + govulncheck
+make check
+```
+
+Run `make help` for the full list of targets. On Windows, use Git Bash
+or WSL — the Makefile assumes a POSIX shell.
+
+See [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ## License
 
