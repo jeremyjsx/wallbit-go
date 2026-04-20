@@ -2,6 +2,7 @@ package wallbit
 
 import (
 	"context"
+	"math/rand/v2"
 	"net/http"
 	"strconv"
 	"strings"
@@ -84,7 +85,25 @@ func (c *Client) retryWaitBeforeNextAttempt(res *http.Response, apiErr *Error, f
 		}
 		d = next
 	}
-	return d
+	return jitter(d)
+}
+
+// jitter applies equal jitter to a deterministic backoff duration so that
+// many clients driven by the same retry schedule do not synchronize on the
+// same wake-up instants (the classic thundering-herd problem when a
+// dependency recovers from a 5xx incident).
+//
+// A zero or negative input returns zero.
+func jitter(d time.Duration) time.Duration {
+	if d <= 0 {
+		return 0
+	}
+	half := d / 2
+	if half <= 0 {
+		return d
+	}
+
+	return half + time.Duration(rand.Int64N(int64(half)+1))
 }
 
 func (c *Client) maxAttempts() int {

@@ -95,9 +95,17 @@ func defaultConfig() (*Config, error) {
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		UserAgent:   "wallbit-go-sdk/0.1.0",
+		UserAgent:   defaultUserAgent(),
 		RetryPolicy: DefaultRetryPolicy(),
 	}, nil
+}
+
+// defaultUserAgent builds the canonical User-Agent used when the caller
+// does not override it via [WithUserAgent]. The format is
+// "wallbit-go-sdk/<version>"; the version comes from [resolveVersion].
+// See [Version] for the resolution precedence.
+func defaultUserAgent() string {
+	return "wallbit-go-sdk/" + resolveVersion()
 }
 
 // WithBaseURL overrides the default API base URL. By default only HTTPS is
