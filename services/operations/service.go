@@ -46,27 +46,23 @@ type Currency struct {
 }
 
 type Transaction struct {
-	UUID            string   `json:"uuid"`
-	Type            string   `json:"type"`
-	ExternalAddress *string  `json:"external_address"`
-	SourceCurrency  Currency `json:"source_currency"`
-	DestCurrency    Currency `json:"dest_currency"`
-	SourceAmount    float64  `json:"source_amount"`
-	DestAmount      float64  `json:"dest_amount"`
-	Status          string   `json:"status"`
+	UUID            string    `json:"uuid"`
+	Type            string    `json:"type"`
+	ExternalAddress *string   `json:"external_address"`
+	SourceCurrency  Currency  `json:"source_currency"`
+	DestCurrency    Currency  `json:"dest_currency"`
+	SourceAmount    float64   `json:"source_amount"`
+	DestAmount      float64   `json:"dest_amount"`
+	Status          string    `json:"status"`
 	CreatedAt       time.Time `json:"created_at"`
-	Comment         *string  `json:"comment"`
+	Comment         *string   `json:"comment"`
 }
 
-type InternalResponse struct {
-	Data Transaction `json:"data"`
+func (s *Service) Internal(ctx context.Context, req InternalRequest) (*transport.Response[Transaction], error) {
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, internalPath, req, &Transaction{})
 }
 
-func (s *Service) Internal(ctx context.Context, req InternalRequest) (*transport.Response[InternalResponse], error) {
-	return transport.SendJSON(ctx, s.sender, http.MethodPost, internalPath, req, &InternalResponse{})
-}
-
-func (s *Service) DepositInvestment(ctx context.Context, req InvestmentDepositRequest) (*transport.Response[InternalResponse], error) {
+func (s *Service) DepositInvestment(ctx context.Context, req InvestmentDepositRequest) (*transport.Response[Transaction], error) {
 	return s.Internal(ctx, InternalRequest{
 		Currency: req.Currency,
 		From:     AccountDefault,
@@ -75,7 +71,7 @@ func (s *Service) DepositInvestment(ctx context.Context, req InvestmentDepositRe
 	})
 }
 
-func (s *Service) WithdrawInvestment(ctx context.Context, req InvestmentWithdrawRequest) (*transport.Response[InternalResponse], error) {
+func (s *Service) WithdrawInvestment(ctx context.Context, req InvestmentWithdrawRequest) (*transport.Response[Transaction], error) {
 	return s.Internal(ctx, InternalRequest{
 		Currency: req.Currency,
 		From:     AccountInvestment,

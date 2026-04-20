@@ -26,5 +26,5 @@ func ExampleService_Internal() {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("transfer %s status=%s\n", res.Payload.Data.UUID, res.Payload.Data.Status)
+	fmt.Printf("transfer %s status=%s\n", res.Payload.UUID, res.Payload.Status)
 }
