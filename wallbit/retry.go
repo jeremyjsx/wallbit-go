@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
 )
 
 func isIdempotentHTTPMethod(method string) bool {
@@ -46,7 +44,7 @@ func sleepContext(ctx context.Context, d time.Duration) error {
 }
 
 // retryWaitBeforeNextAttempt returns the backoff before attempt failureIndex+1 (0 = first retry after one failure).
-func (c *Client) retryWaitBeforeNextAttempt(res *http.Response, sdkErr *errorsx.SDKError, failureIndex int) time.Duration {
+func (c *Client) retryWaitBeforeNextAttempt(res *http.Response, apiErr *Error, failureIndex int) time.Duration {
 	p := c.cfg.RetryPolicy
 	base := p.BaseDelay
 	maxD := p.MaxDelay
@@ -58,8 +56,8 @@ func (c *Client) retryWaitBeforeNextAttempt(res *http.Response, sdkErr *errorsx.
 	}
 
 	var fromAPI time.Duration
-	if sdkErr != nil {
-		if d := sdkErr.RetryAfter(); d > 0 {
+	if apiErr != nil {
+		if d := apiErr.RetryAfter(); d > 0 {
 			fromAPI = d
 		}
 	}

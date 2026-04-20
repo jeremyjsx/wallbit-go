@@ -1,5 +1,3 @@
-// Package wallbit is the Wallbit HTTP API client. It applies [Config.RetryPolicy] and [Config.Hook]
-// on every request performed by service methods.
 package wallbit
 
 import (
@@ -11,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
-	"github.com/jeremyjsx/wallbit-go/internal/httpx"
 	"github.com/jeremyjsx/wallbit-go/services/accountdetails"
 	"github.com/jeremyjsx/wallbit-go/services/apikey"
 	"github.com/jeremyjsx/wallbit-go/services/assets"
@@ -24,6 +20,7 @@ import (
 	"github.com/jeremyjsx/wallbit-go/services/trades"
 	"github.com/jeremyjsx/wallbit-go/services/transactions"
 	"github.com/jeremyjsx/wallbit-go/services/wallets"
+	"github.com/jeremyjsx/wallbit-go/transport"
 )
 
 var ErrMissingAPIKey = errors.New("wallbit client requires a non-empty api key")
@@ -31,7 +28,7 @@ var ErrMissingAPIKey = errors.New("wallbit client requires a non-empty api key")
 type Client struct {
 	apiKey string
 	cfg    *Config
-	sender httpx.Sender
+	sender transport.Sender
 
 	Balance *balance.Service
 
@@ -174,7 +171,7 @@ func (c *Client) do(req *http.Request, dest any) error {
 			if reqTry.URL != nil {
 				path = reqTry.URL.Path
 			}
-			h.OnRequestStart(&httpx.RequestMeta{Method: reqTry.Method, Path: path})
+			h.OnRequestStart(&RequestMeta{Method: reqTry.Method, Path: path})
 		}
 
 		start := time.Now()
@@ -186,7 +183,7 @@ func (c *Client) do(req *http.Request, dest any) error {
 			statusCode = res.StatusCode
 		}
 		if h := c.cfg.Hook; h != nil {
-			h.OnRequestDone(&httpx.ResponseMeta{StatusCode: statusCode, Duration: dur})
+			h.OnRequestDone(&ResponseMeta{StatusCode: statusCode, Duration: dur})
 		}
 
 		if err != nil {
@@ -207,15 +204,15 @@ func (c *Client) do(req *http.Request, dest any) error {
 		}
 
 		if statusCode >= 400 {
-			sdkErr := errorsx.FromHTTP(statusCode, res.Header.Get("X-Request-ID"), body)
-			if attempt < max-1 && isIdempotentHTTPMethod(req.Method) && errorsx.IsRetryable(sdkErr) {
-				wait := c.retryWaitBeforeNextAttempt(res, sdkErr, attempt)
+			apiErr := ErrorFromHTTP(statusCode, res.Header.Get("X-Request-ID"), body)
+			if attempt < max-1 && isIdempotentHTTPMethod(req.Method) && IsRetryable(apiErr) {
+				wait := c.retryWaitBeforeNextAttempt(res, apiErr, attempt)
 				if err := sleepContext(ctx, wait); err != nil {
 					return err
 				}
 				continue
 			}
-			return sdkErr
+			return apiErr
 		}
 
 		if dest == nil || len(body) == 0 || statusCode == http.StatusNoContent {
