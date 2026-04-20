@@ -97,11 +97,5 @@ func (s *Service) List(ctx context.Context, req *ListRequest) (*transport.Respon
 		}
 	}
 
-	out := &ListResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodGet, path, nil, out)
-	if err != nil {
-		return nil, err
-	}
-
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodGet, path, nil, &ListResponse{})
 }

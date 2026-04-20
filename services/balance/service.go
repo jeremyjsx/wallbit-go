@@ -39,19 +39,9 @@ type StocksBalanceResponse struct {
 }
 
 func (s *Service) GetChecking(ctx context.Context) (*transport.Response[CheckingBalanceResponse], error) {
-	out := &CheckingBalanceResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodGet, checkingPath, nil, out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodGet, checkingPath, nil, &CheckingBalanceResponse{})
 }
 
 func (s *Service) GetStocks(ctx context.Context) (*transport.Response[StocksBalanceResponse], error) {
-	out := &StocksBalanceResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodGet, stocksPath, nil, out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodGet, stocksPath, nil, &StocksBalanceResponse{})
 }

@@ -22,10 +22,5 @@ type RevokeResponse struct {
 }
 
 func (s *Service) Revoke(ctx context.Context) (*transport.Response[RevokeResponse], error) {
-	out := &RevokeResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodDelete, revokePath, nil, out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodDelete, revokePath, nil, &RevokeResponse{})
 }

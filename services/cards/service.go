@@ -1,9 +1,7 @@
 package cards
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -58,12 +56,7 @@ type UpdateStatusResponse struct {
 }
 
 func (s *Service) List(ctx context.Context) (*transport.Response[ListResponse], error) {
-	out := &ListResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodGet, listPath, nil, out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodGet, listPath, nil, &ListResponse{})
 }
 
 func (s *Service) Block(ctx context.Context, cardUUID string) (*transport.Response[UpdateStatusResponse], error) {
@@ -78,16 +71,6 @@ func (s *Service) updateStatus(ctx context.Context, cardUUID string, status stri
 	if strings.TrimSpace(cardUUID) == "" {
 		return nil, ErrEmptyCardUUID
 	}
-	payload, err := json.Marshal(updateStatusRequest{Status: status})
-	if err != nil {
-		return nil, err
-	}
-
-	out := &UpdateStatusResponse{}
 	path := fmt.Sprintf(updateStatusPathFormat, cardUUID)
-	meta, err := s.sender.Send(ctx, http.MethodPatch, path, bytes.NewBuffer(payload), out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodPatch, path, updateStatusRequest{Status: status}, &UpdateStatusResponse{})
 }

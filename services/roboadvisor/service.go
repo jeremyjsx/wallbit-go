@@ -1,9 +1,7 @@
 package roboadvisor
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/jeremyjsx/wallbit-go/transport"
@@ -106,38 +104,13 @@ type WithdrawResponse struct {
 }
 
 func (s *Service) GetBalance(ctx context.Context) (*transport.Response[GetBalanceResponse], error) {
-	out := &GetBalanceResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodGet, balancePath, nil, out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodGet, balancePath, nil, &GetBalanceResponse{})
 }
 
 func (s *Service) Deposit(ctx context.Context, req DepositRequest) (*transport.Response[DepositResponse], error) {
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &DepositResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodPost, depositPath, bytes.NewBuffer(payload), out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, depositPath, req, &DepositResponse{})
 }
 
 func (s *Service) Withdraw(ctx context.Context, req WithdrawRequest) (*transport.Response[WithdrawResponse], error) {
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &WithdrawResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodPost, withdrawPath, bytes.NewBuffer(payload), out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, withdrawPath, req, &WithdrawResponse{})
 }

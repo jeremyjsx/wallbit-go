@@ -1,9 +1,7 @@
 package trades
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/jeremyjsx/wallbit-go/transport"
@@ -50,15 +48,5 @@ type CreateResponse struct {
 }
 
 func (s *Service) Create(ctx context.Context, req CreateRequest) (*transport.Response[CreateResponse], error) {
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &CreateResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodPost, createPath, bytes.NewBuffer(payload), out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, createPath, req, &CreateResponse{})
 }

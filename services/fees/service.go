@@ -71,16 +71,5 @@ type GetResponse struct {
 }
 
 func (s *Service) Get(ctx context.Context, req GetRequest) (*transport.Response[GetResponse], error) {
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &GetResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodPost, getPath, bytes.NewBuffer(payload), out)
-	if err != nil {
-		return nil, err
-	}
-
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, getPath, req, &GetResponse{})
 }

@@ -1,9 +1,7 @@
 package operations
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 
 	"github.com/jeremyjsx/wallbit-go/transport"
@@ -64,17 +62,7 @@ type InternalResponse struct {
 }
 
 func (s *Service) Internal(ctx context.Context, req InternalRequest) (*transport.Response[InternalResponse], error) {
-	payload, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	out := &InternalResponse{}
-	meta, err := s.sender.Send(ctx, http.MethodPost, internalPath, bytes.NewBuffer(payload), out)
-	if err != nil {
-		return nil, err
-	}
-	return transport.NewResponse(meta, out), nil
+	return transport.SendJSON(ctx, s.sender, http.MethodPost, internalPath, req, &InternalResponse{})
 }
 
 func (s *Service) DepositInvestment(ctx context.Context, req InvestmentDepositRequest) (*transport.Response[InternalResponse], error) {
