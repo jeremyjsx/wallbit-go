@@ -6,38 +6,83 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	"github.com/jeremyjsx/wallbit-go/internal/httpx"
 )
 
 // ErrNilConfig is returned by [NewClientFromConfig] when cfg is nil.
 var ErrNilConfig = errors.New("wallbit client: config is required")
 
-// ErrInvalidBaseURL is returned when WithBaseURL receives a malformed URL.
+// ErrInvalidBaseURL is returned when [WithBaseURL] receives a malformed URL.
 var ErrInvalidBaseURL = errors.New("wallbit client: base url must include valid scheme and host")
 
-// ErrInsecureBaseURL is returned when a non-HTTPS base URL is configured without explicit opt-in.
+// ErrInsecureBaseURL is returned when a non-HTTPS base URL is configured
+// without the explicit [WithInsecureHTTPForTesting] opt-in.
 var ErrInsecureBaseURL = errors.New("wallbit client: non-https base url requires WithInsecureHTTPForTesting")
 
 const defaultBaseURL = "https://api.wallbit.io"
 
+// Option configures a [Client] at construction time. Pass options to
+// [NewClient]; later options override earlier ones for the same field.
 type Option func(*Config) error
 
+// Config holds the resolved configuration of a [Client]. Construct it
+// directly only when using [NewClientFromConfig]; for the common case use
+// [NewClient] with functional [Option] values.
 type Config struct {
 	BaseURL     *url.URL
 	HTTPClient  *http.Client
 	UserAgent   string
-	RetryPolicy httpx.RetryPolicy
-	Hook        httpx.Hook
+	RetryPolicy RetryPolicy
+	Hook        Hook
 	// AllowInsecureHTTPForTesting permits HTTP (non-TLS) base URLs.
 	// Keep this false in production.
 	AllowInsecureHTTPForTesting bool
 }
 
-type RetryPolicy = httpx.RetryPolicy
-type Hook = httpx.Hook
-type RequestMeta = httpx.RequestMeta
-type ResponseMeta = httpx.ResponseMeta
+// RetryPolicy controls how the [Client] retries idempotent requests on
+// transport failures and on retryable API responses (HTTP 429 and 5xx).
+//
+// MaxAttempts is the total number of attempts including the first one.
+// A value < 1 means no retries (single attempt). BaseDelay is the initial
+// backoff before the first retry; subsequent delays grow exponentially and
+// are capped by MaxDelay. The client always honors Retry-After when present.
+type RetryPolicy struct {
+	MaxAttempts int
+	BaseDelay   time.Duration
+	MaxDelay    time.Duration
+}
+
+// DefaultRetryPolicy returns the policy used by [NewClient] when none is
+// supplied: up to 3 attempts with 250ms base delay, capped at 2s.
+func DefaultRetryPolicy() RetryPolicy {
+	return RetryPolicy{
+		MaxAttempts: 3,
+		BaseDelay:   250 * time.Millisecond,
+		MaxDelay:    2 * time.Second,
+	}
+}
+
+// Hook is invoked around every HTTP attempt performed by the [Client],
+// including retries. Implementations must be safe for concurrent use:
+// different requests may call the hook in parallel.
+type Hook interface {
+	OnRequestStart(*RequestMeta)
+	OnRequestDone(*ResponseMeta)
+}
+
+// RequestMeta is the context passed to [Hook.OnRequestStart] for a single
+// HTTP attempt. Path is the URL path (without the base URL or query string).
+type RequestMeta struct {
+	Method string
+	Path   string
+}
+
+// ResponseMeta is the context passed to [Hook.OnRequestDone] for a single
+// HTTP attempt. StatusCode is 0 when the transport returned an error before
+// receiving a response.
+type ResponseMeta struct {
+	StatusCode int
+	Duration   time.Duration
+}
 
 func defaultConfig() (*Config, error) {
 	parsed, err := url.Parse(defaultBaseURL)
@@ -51,10 +96,13 @@ func defaultConfig() (*Config, error) {
 			Timeout: 30 * time.Second,
 		},
 		UserAgent:   "wallbit-go-sdk/0.1.0",
-		RetryPolicy: httpx.DefaultRetryPolicy(),
+		RetryPolicy: DefaultRetryPolicy(),
 	}, nil
 }
 
+// WithBaseURL overrides the default API base URL. By default only HTTPS is
+// accepted; pair with [WithInsecureHTTPForTesting] to allow HTTP for local
+// servers and [net/http/httptest] in tests.
 func WithBaseURL(raw string) Option {
 	return func(cfg *Config) error {
 		parsed, err := url.Parse(raw)
@@ -86,8 +134,9 @@ func validateBaseURL(cfg *Config) error {
 	return nil
 }
 
-// WithInsecureHTTPForTesting allows using HTTP base URLs in tests/local development.
-// Do not enable this in production.
+// WithInsecureHTTPForTesting allows using HTTP base URLs in tests and local
+// development. Do not enable this in production: the API key would travel in
+// cleartext.
 func WithInsecureHTTPForTesting() Option {
 	return func(cfg *Config) error {
 		cfg.AllowInsecureHTTPForTesting = true
@@ -95,6 +144,10 @@ func WithInsecureHTTPForTesting() Option {
 	}
 }
 
+// WithHTTPClient supplies a custom [*http.Client]. The client is cloned and
+// hardened: a [http.Client.CheckRedirect] hook is installed to block
+// cross-host redirects so that the API key is never sent to a foreign host.
+// Nil is ignored.
 func WithHTTPClient(httpClient *http.Client) Option {
 	return func(cfg *Config) error {
 		if httpClient != nil {
@@ -104,6 +157,7 @@ func WithHTTPClient(httpClient *http.Client) Option {
 	}
 }
 
+// WithTimeout sets the HTTP client timeout. Non-positive values are ignored.
 func WithTimeout(timeout time.Duration) Option {
 	return func(cfg *Config) error {
 		if timeout > 0 {
@@ -113,6 +167,8 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
+// WithUserAgent overrides the default User-Agent header sent with every
+// request. Empty strings are ignored.
 func WithUserAgent(userAgent string) Option {
 	return func(cfg *Config) error {
 		if userAgent != "" {
@@ -122,19 +178,20 @@ func WithUserAgent(userAgent string) Option {
 	}
 }
 
-// WithRetryPolicy sets automatic retries for idempotent methods (GET, HEAD, DELETE, OPTIONS, TRACE)
-// on transport failures and on retryable API responses (HTTP 429 and 5xx; see errorsx.IsRetryable).
-// POST, PATCH, and PUT are never retried by the client.
-func WithRetryPolicy(policy httpx.RetryPolicy) Option {
+// WithRetryPolicy sets automatic retries for idempotent methods (GET, HEAD,
+// DELETE, OPTIONS, TRACE) on transport failures and on retryable API
+// responses (HTTP 429 and 5xx; see [IsRetryable]). POST, PATCH and PUT are
+// never retried by the client.
+func WithRetryPolicy(policy RetryPolicy) Option {
 	return func(cfg *Config) error {
 		cfg.RetryPolicy = policy
 		return nil
 	}
 }
 
-// WithHook registers a hook invoked around each HTTP attempt (including retries).
-// Implementations must be safe for concurrent use; different requests may call the hook in parallel.
-func WithHook(hook httpx.Hook) Option {
+// WithHook registers a [Hook] invoked around each HTTP attempt (including
+// retries). Implementations must be safe for concurrent use.
+func WithHook(hook Hook) Option {
 	return func(cfg *Config) error {
 		cfg.Hook = hook
 		return nil

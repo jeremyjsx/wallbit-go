@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/jeremyjsx/wallbit-go/internal/httpx"
+	"github.com/jeremyjsx/wallbit-go/transport"
 )
 
 const listPath = "/api/public/v1/cards"
@@ -24,10 +24,10 @@ const (
 var ErrEmptyCardUUID = errors.New("cards: card uuid is required")
 
 type Service struct {
-	sender httpx.Sender
+	sender transport.Sender
 }
 
-func NewService(sender httpx.Sender) *Service {
+func NewService(sender transport.Sender) *Service {
 	return &Service{sender: sender}
 }
 

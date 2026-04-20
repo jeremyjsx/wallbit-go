@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/jeremyjsx/wallbit-go/internal/httpx"
+	"github.com/jeremyjsx/wallbit-go/transport"
 )
 
 const getPath = "/api/public/v1/account-details"
@@ -19,10 +19,10 @@ const (
 )
 
 type Service struct {
-	sender httpx.Sender
+	sender transport.Sender
 }
 
-func NewService(sender httpx.Sender) *Service {
+func NewService(sender transport.Sender) *Service {
 	return &Service{sender: sender}
 }
 

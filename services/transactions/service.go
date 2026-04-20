@@ -7,16 +7,16 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/jeremyjsx/wallbit-go/internal/httpx"
+	"github.com/jeremyjsx/wallbit-go/transport"
 )
 
 const listPath = "/api/public/v1/transactions"
 
 type Service struct {
-	sender httpx.Sender
+	sender transport.Sender
 }
 
-func NewService(sender httpx.Sender) *Service {
+func NewService(sender transport.Sender) *Service {
 	return &Service{sender: sender}
 }
 

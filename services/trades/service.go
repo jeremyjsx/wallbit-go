@@ -6,16 +6,16 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/jeremyjsx/wallbit-go/internal/httpx"
+	"github.com/jeremyjsx/wallbit-go/transport"
 )
 
 const createPath = "/api/public/v1/trades"
 
 type Service struct {
-	sender httpx.Sender
+	sender transport.Sender
 }
 
-func NewService(sender httpx.Sender) *Service {
+func NewService(sender transport.Sender) *Service {
 	return &Service{sender: sender}
 }
 

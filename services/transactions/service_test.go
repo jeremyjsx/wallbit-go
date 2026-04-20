@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
 	"github.com/jeremyjsx/wallbit-go/services/transactions"
 	"github.com/jeremyjsx/wallbit-go/wallbit"
 )
@@ -118,11 +117,11 @@ func TestServiceListReturnsAPIError(t *testing.T) {
 	}
 
 	_, err = c.Transactions.List(context.Background(), nil)
-	var sdkErr *errorsx.SDKError
-	if !errors.As(err, &sdkErr) {
-		t.Fatalf("expected SDKError, got %v", err)
+	var apiErr *wallbit.Error
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *wallbit.Error, got %v", err)
 	}
-	if sdkErr.Code != "INSUFFICIENT_PERMISSIONS" {
-		t.Fatalf("unexpected error code %q", sdkErr.Code)
+	if apiErr.Code != "INSUFFICIENT_PERMISSIONS" {
+		t.Fatalf("unexpected error code %q", apiErr.Code)
 	}
 }

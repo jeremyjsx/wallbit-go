@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
 	"github.com/jeremyjsx/wallbit-go/services/trades"
 	"github.com/jeremyjsx/wallbit-go/wallbit"
 )
@@ -131,11 +130,11 @@ func TestServiceCreateReturnsAPIError(t *testing.T) {
 		OrderType: "MARKET",
 		Amount:    &amount,
 	})
-	var sdkErr *errorsx.SDKError
-	if !errors.As(err, &sdkErr) {
-		t.Fatalf("expected SDKError, got %v", err)
+	var apiErr *wallbit.Error
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *wallbit.Error, got %v", err)
 	}
-	if sdkErr.Code != "INSUFFICIENT_PERMISSIONS" {
-		t.Fatalf("unexpected error code %q", sdkErr.Code)
+	if apiErr.Code != "INSUFFICIENT_PERMISSIONS" {
+		t.Fatalf("unexpected error code %q", apiErr.Code)
 	}
 }

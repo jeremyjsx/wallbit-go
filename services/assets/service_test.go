@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/jeremyjsx/wallbit-go/internal/errorsx"
 	"github.com/jeremyjsx/wallbit-go/services/assets"
 	"github.com/jeremyjsx/wallbit-go/wallbit"
 )
@@ -81,12 +80,12 @@ func TestServiceGetNotFound(t *testing.T) {
 	}
 
 	_, err = c.Assets.Get(context.Background(), "NOPE")
-	var sdkErr *errorsx.SDKError
-	if !errors.As(err, &sdkErr) {
-		t.Fatalf("expected SDKError, got %v", err)
+	var apiErr *wallbit.Error
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *wallbit.Error, got %v", err)
 	}
-	if sdkErr.StatusCode != http.StatusNotFound {
-		t.Fatalf("unexpected status %d", sdkErr.StatusCode)
+	if apiErr.StatusCode != http.StatusNotFound {
+		t.Fatalf("unexpected status %d", apiErr.StatusCode)
 	}
 }
 
@@ -114,7 +113,7 @@ func TestServiceList(t *testing.T) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"data":[{"symbol":"AAPL","name":"Apple Inc.","price":175.5,"asset_type":"Stock","exchange":"NASDAQ","sector":"Technology","market_cap_m":"2750000","description":"Apple description","description_es":"Descripcion Apple","country":"United States","ceo":"Tim Cook","employees":"164000","logo_url":"https://static.atomicvest.com/AAPL.svg","dividend":{"amount":0.24,"yield":0.52,"ex_date":"2024-02-09","payment_date":"2024-02-15"}}],"pages":15,"current_page":2,"count":150}`))
+		_, _ = w.Write([]byte(`{"data":[{"symbol":"AAPL","name":"Apple Inc.","price":175.5,"asset_type":"Stock","exchange":"NASDAQ","sector":"Technology","market_cap_m":"2750000","description":"Apple description","description_es":"Descripción Apple","country":"United States","ceo":"Tim Cook","employees":"164000","logo_url":"https://static.atomicvest.com/AAPL.svg","dividend":{"amount":0.24,"yield":0.52,"ex_date":"2024-02-09","payment_date":"2024-02-15"}}],"pages":15,"current_page":2,"count":150}`))
 	}))
 	defer server.Close()
 
@@ -194,11 +193,11 @@ func TestServiceListReturnsAPIError(t *testing.T) {
 	}
 
 	_, err = c.Assets.List(context.Background(), nil)
-	var sdkErr *errorsx.SDKError
-	if !errors.As(err, &sdkErr) {
-		t.Fatalf("expected SDKError, got %v", err)
+	var apiErr *wallbit.Error
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *wallbit.Error, got %v", err)
 	}
-	if sdkErr.Code != "INSUFFICIENT_PERMISSIONS" {
-		t.Fatalf("unexpected error code %q", sdkErr.Code)
+	if apiErr.Code != "INSUFFICIENT_PERMISSIONS" {
+		t.Fatalf("unexpected error code %q", apiErr.Code)
 	}
 }
