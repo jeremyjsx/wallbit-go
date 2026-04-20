@@ -51,11 +51,11 @@ func TestServiceInternal(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.UUID != "tx_123" {
-		t.Fatalf("expected uuid tx_123, got %q", out.Data.UUID)
+	if out.Payload.Data.UUID != "tx_123" {
+		t.Fatalf("expected uuid tx_123, got %q", out.Payload.Data.UUID)
 	}
-	if out.Data.Status != "COMPLETED" {
-		t.Fatalf("expected status COMPLETED, got %q", out.Data.Status)
+	if out.Payload.Data.Status != "COMPLETED" {
+		t.Fatalf("expected status COMPLETED, got %q", out.Payload.Data.Status)
 	}
 }
 
@@ -92,8 +92,8 @@ func TestServiceDepositInvestment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.UUID != "tx_deposit" {
-		t.Fatalf("expected uuid tx_deposit, got %q", out.Data.UUID)
+	if out.Payload.Data.UUID != "tx_deposit" {
+		t.Fatalf("expected uuid tx_deposit, got %q", out.Payload.Data.UUID)
 	}
 }
 
@@ -130,8 +130,8 @@ func TestServiceWithdrawInvestment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.UUID != "tx_withdraw" {
-		t.Fatalf("expected uuid tx_withdraw, got %q", out.Data.UUID)
+	if out.Payload.Data.UUID != "tx_withdraw" {
+		t.Fatalf("expected uuid tx_withdraw, got %q", out.Payload.Data.UUID)
 	}
 }
 

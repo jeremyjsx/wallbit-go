@@ -21,10 +21,11 @@ type RevokeResponse struct {
 	Message string `json:"message"`
 }
 
-func (s *Service) Revoke(ctx context.Context) (*RevokeResponse, error) {
+func (s *Service) Revoke(ctx context.Context) (*transport.Response[RevokeResponse], error) {
 	out := &RevokeResponse{}
-	if err := s.sender.Send(ctx, http.MethodDelete, revokePath, nil, out); err != nil {
+	meta, err := s.sender.Send(ctx, http.MethodDelete, revokePath, nil, out)
+	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return transport.NewResponse(meta, out), nil
 }

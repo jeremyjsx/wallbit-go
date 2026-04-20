@@ -39,17 +39,17 @@ func TestServiceGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.HolderName != "John Doe" {
-		t.Fatalf("unexpected holder_name %q", out.Data.HolderName)
+	if out.Payload.Data.HolderName != "John Doe" {
+		t.Fatalf("unexpected holder_name %q", out.Payload.Data.HolderName)
 	}
-	if out.Data.AccountType != "CHECKING" {
-		t.Fatalf("unexpected account_type %q", out.Data.AccountType)
+	if out.Payload.Data.AccountType != "CHECKING" {
+		t.Fatalf("unexpected account_type %q", out.Payload.Data.AccountType)
 	}
-	if out.Data.BankName != "Community Federal Savings Bank" {
-		t.Fatalf("unexpected bank_name %q", out.Data.BankName)
+	if out.Payload.Data.BankName != "Community Federal Savings Bank" {
+		t.Fatalf("unexpected bank_name %q", out.Payload.Data.BankName)
 	}
-	if out.Data.Address == nil || out.Data.Address.City != "New York" {
-		t.Fatalf("unexpected address: %+v", out.Data.Address)
+	if out.Payload.Data.Address == nil || out.Payload.Data.Address.City != "New York" {
+		t.Fatalf("unexpected address: %+v", out.Payload.Data.Address)
 	}
 }
 
@@ -81,11 +81,11 @@ func TestServiceGetWithCountryAndCurrencyQuery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.IBAN == nil || *out.Data.IBAN != "DE89370400440532013000" {
-		t.Fatalf("unexpected iban: %v", out.Data.IBAN)
+	if out.Payload.Data.IBAN == nil || *out.Payload.Data.IBAN != "DE89370400440532013000" {
+		t.Fatalf("unexpected iban: %v", out.Payload.Data.IBAN)
 	}
-	if out.Data.BIC == nil || *out.Data.BIC != "COBADEFFXXX" {
-		t.Fatalf("unexpected bic: %v", out.Data.BIC)
+	if out.Payload.Data.BIC == nil || *out.Payload.Data.BIC != "COBADEFFXXX" {
+		t.Fatalf("unexpected bic: %v", out.Payload.Data.BIC)
 	}
 }
 
@@ -111,8 +111,8 @@ func TestServiceGetForwardsArbitraryQueryValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.HolderName != "H" {
-		t.Fatalf("unexpected holder_name %q", out.Data.HolderName)
+	if out.Payload.Data.HolderName != "H" {
+		t.Fatalf("unexpected holder_name %q", out.Payload.Data.HolderName)
 	}
 }
 

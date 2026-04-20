@@ -54,23 +54,23 @@ func TestServiceList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.CurrentPage != 2 {
-		t.Fatalf("expected current_page=2, got %d", out.Data.CurrentPage)
+	if out.Payload.Data.CurrentPage != 2 {
+		t.Fatalf("expected current_page=2, got %d", out.Payload.Data.CurrentPage)
 	}
-	if len(out.Data.Data) != 2 {
-		t.Fatalf("expected two transactions, got %d", len(out.Data.Data))
+	if len(out.Payload.Data.Data) != 2 {
+		t.Fatalf("expected two transactions, got %d", len(out.Payload.Data.Data))
 	}
-	if out.Data.Data[0].UUID != "abc" {
-		t.Fatalf("unexpected uuid %q", out.Data.Data[0].UUID)
+	if out.Payload.Data.Data[0].UUID != "abc" {
+		t.Fatalf("unexpected uuid %q", out.Payload.Data.Data[0].UUID)
 	}
-	if out.Data.Data[0].ExternalAddress == nil || *out.Data.Data[0].ExternalAddress != "Juan Perez" {
-		t.Fatalf("unexpected external_address in first transaction: %v", out.Data.Data[0].ExternalAddress)
+	if out.Payload.Data.Data[0].ExternalAddress == nil || *out.Payload.Data.Data[0].ExternalAddress != "Juan Perez" {
+		t.Fatalf("unexpected external_address in first transaction: %v", out.Payload.Data.Data[0].ExternalAddress)
 	}
-	if out.Data.Data[1].UUID != "def" {
-		t.Fatalf("unexpected uuid %q", out.Data.Data[1].UUID)
+	if out.Payload.Data.Data[1].UUID != "def" {
+		t.Fatalf("unexpected uuid %q", out.Payload.Data.Data[1].UUID)
 	}
-	if out.Data.Data[1].ExternalAddress != nil {
-		t.Fatalf("expected nil external_address in second transaction, got %v", out.Data.Data[1].ExternalAddress)
+	if out.Payload.Data.Data[1].ExternalAddress != nil {
+		t.Fatalf("expected nil external_address in second transaction, got %v", out.Payload.Data.Data[1].ExternalAddress)
 	}
 }
 
@@ -96,8 +96,8 @@ func TestServiceListWithoutFilters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.Count != 0 {
-		t.Fatalf("expected count=0, got %d", out.Data.Count)
+	if out.Payload.Data.Count != 0 {
+		t.Fatalf("expected count=0, got %d", out.Payload.Data.Count)
 	}
 }
 

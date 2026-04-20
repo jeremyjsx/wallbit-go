@@ -151,16 +151,16 @@ func (c *Client) newRequest(ctx context.Context, method string, path string, bod
 	return req, nil
 }
 
-func (c *Client) send(ctx context.Context, method string, path string, body io.Reader, dest any) error {
+func (c *Client) send(ctx context.Context, method string, path string, body io.Reader, dest any) (*transport.Metadata, error) {
 	req, err := c.newRequest(ctx, method, path, body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return c.do(req, dest)
 }
 
-func (c *Client) do(req *http.Request, dest any) error {
+func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 	ctx := req.Context()
 	max := c.maxAttempts()
 
@@ -190,47 +190,54 @@ func (c *Client) do(req *http.Request, dest any) error {
 			if attempt < max-1 && isIdempotentHTTPMethod(req.Method) {
 				wait := c.retryWaitBeforeNextAttempt(nil, nil, attempt)
 				if err := sleepContext(ctx, wait); err != nil {
-					return err
+					return nil, err
 				}
 				continue
 			}
-			return err
+			return nil, err
 		}
 
 		body, rerr := io.ReadAll(res.Body)
 		res.Body.Close()
 		if rerr != nil {
-			return rerr
+			return nil, rerr
+		}
+
+		requestID := res.Header.Get("X-Request-ID")
+		meta := &transport.Metadata{
+			StatusCode: statusCode,
+			Header:     res.Header,
+			RequestID:  requestID,
 		}
 
 		if statusCode >= 400 {
-			apiErr := ErrorFromHTTP(statusCode, res.Header.Get("X-Request-ID"), body)
+			apiErr := ErrorFromHTTP(statusCode, requestID, body)
 			if attempt < max-1 && isIdempotentHTTPMethod(req.Method) && IsRetryable(apiErr) {
 				wait := c.retryWaitBeforeNextAttempt(res, apiErr, attempt)
 				if err := sleepContext(ctx, wait); err != nil {
-					return err
+					return nil, err
 				}
 				continue
 			}
-			return apiErr
+			return meta, apiErr
 		}
 
 		if dest == nil || len(body) == 0 || statusCode == http.StatusNoContent {
-			return nil
+			return meta, nil
 		}
 		if err := json.Unmarshal(body, dest); err != nil {
-			return err
+			return meta, err
 		}
-		return nil
+		return meta, nil
 	}
-	return errors.New("wallbit client: internal error: retry loop exited without return")
+	return nil, errors.New("wallbit client: internal error: retry loop exited without return")
 }
 
 type senderAdapter struct {
 	client *Client
 }
 
-func (s senderAdapter) Send(ctx context.Context, method string, path string, body io.Reader, dest any) error {
+func (s senderAdapter) Send(ctx context.Context, method string, path string, body io.Reader, dest any) (*transport.Metadata, error) {
 	return s.client.send(ctx, method, path, body, dest)
 }
 

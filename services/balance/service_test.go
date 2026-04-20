@@ -32,14 +32,14 @@ func TestServiceGetChecking(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(out.Data) != 1 {
-		t.Fatalf("expected one balance row, got %d", len(out.Data))
+	if len(out.Payload.Data) != 1 {
+		t.Fatalf("expected one balance row, got %d", len(out.Payload.Data))
 	}
-	if out.Data[0].Currency != "USD" {
-		t.Fatalf("expected currency USD, got %q", out.Data[0].Currency)
+	if out.Payload.Data[0].Currency != "USD" {
+		t.Fatalf("expected currency USD, got %q", out.Payload.Data[0].Currency)
 	}
-	if out.Data[0].Balance != 100.5 {
-		t.Fatalf("expected balance 100.5, got %v", out.Data[0].Balance)
+	if out.Payload.Data[0].Balance != 100.5 {
+		t.Fatalf("expected balance 100.5, got %v", out.Payload.Data[0].Balance)
 	}
 }
 
@@ -65,11 +65,11 @@ func TestServiceGetStocks(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(out.Data) != 1 {
-		t.Fatalf("expected one stock position, got %d", len(out.Data))
+	if len(out.Payload.Data) != 1 {
+		t.Fatalf("expected one stock position, got %d", len(out.Payload.Data))
 	}
-	if out.Data[0].Symbol != "AAPL" {
-		t.Fatalf("expected symbol AAPL, got %q", out.Data[0].Symbol)
+	if out.Payload.Data[0].Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", out.Payload.Data[0].Symbol)
 	}
 }
 

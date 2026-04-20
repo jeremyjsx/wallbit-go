@@ -42,11 +42,11 @@ func TestServiceGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(out.Data) != 1 {
-		t.Fatalf("expected one wallet, got %d", len(out.Data))
+	if len(out.Payload.Data) != 1 {
+		t.Fatalf("expected one wallet, got %d", len(out.Payload.Data))
 	}
-	if out.Data[0].CurrencyCode != "USDT" {
-		t.Fatalf("unexpected currency_code %q", out.Data[0].CurrencyCode)
+	if out.Payload.Data[0].CurrencyCode != "USDT" {
+		t.Fatalf("unexpected currency_code %q", out.Payload.Data[0].CurrencyCode)
 	}
 }
 
@@ -72,8 +72,8 @@ func TestServiceGetWithoutFilters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(out.Data) != 0 {
-		t.Fatalf("expected no wallets, got %d", len(out.Data))
+	if len(out.Payload.Data) != 0 {
+		t.Fatalf("expected no wallets, got %d", len(out.Payload.Data))
 	}
 }
 

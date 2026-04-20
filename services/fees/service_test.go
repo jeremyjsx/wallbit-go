@@ -46,17 +46,17 @@ func TestServiceGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.Empty {
+	if out.Payload.Data.Empty {
 		t.Fatal("expected fee row, got empty data")
 	}
-	if out.Data.Row == nil {
+	if out.Payload.Data.Row == nil {
 		t.Fatal("expected non-nil fee setting")
 	}
-	if out.Data.Row.FeeType != "TRADE" {
-		t.Fatalf("expected fee_type TRADE, got %q", out.Data.Row.FeeType)
+	if out.Payload.Data.Row.FeeType != "TRADE" {
+		t.Fatalf("expected fee_type TRADE, got %q", out.Payload.Data.Row.FeeType)
 	}
-	if out.Data.Row.Tier == nil || *out.Data.Row.Tier != "LEVEL1" {
-		t.Fatalf("expected tier LEVEL1, got %v", out.Data.Row.Tier)
+	if out.Payload.Data.Row.Tier == nil || *out.Payload.Data.Row.Tier != "LEVEL1" {
+		t.Fatalf("expected tier LEVEL1, got %v", out.Payload.Data.Row.Tier)
 	}
 }
 
@@ -79,8 +79,8 @@ func TestServiceGetNullTier(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.Row == nil || out.Data.Row.Tier != nil {
-		t.Fatalf("expected nil tier, got %v", out.Data.Row.Tier)
+	if out.Payload.Data.Row == nil || out.Payload.Data.Row.Tier != nil {
+		t.Fatalf("expected nil tier, got %v", out.Payload.Data.Row.Tier)
 	}
 }
 
@@ -103,11 +103,11 @@ func TestServiceGetReturnsEmptyDataArray(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !out.Data.Empty {
-		t.Fatalf("expected empty data flag, got %#v", out.Data)
+	if !out.Payload.Data.Empty {
+		t.Fatalf("expected empty data flag, got %#v", out.Payload.Data)
 	}
-	if out.Data.Row != nil {
-		t.Fatalf("expected nil row for empty data, got %+v", out.Data.Row)
+	if out.Payload.Data.Row != nil {
+		t.Fatalf("expected nil row for empty data, got %+v", out.Payload.Data.Row)
 	}
 }
 

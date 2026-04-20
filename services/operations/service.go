@@ -63,20 +63,21 @@ type InternalResponse struct {
 	Data Transaction `json:"data"`
 }
 
-func (s *Service) Internal(ctx context.Context, req InternalRequest) (*InternalResponse, error) {
+func (s *Service) Internal(ctx context.Context, req InternalRequest) (*transport.Response[InternalResponse], error) {
 	payload, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
 	out := &InternalResponse{}
-	if err := s.sender.Send(ctx, http.MethodPost, internalPath, bytes.NewBuffer(payload), out); err != nil {
+	meta, err := s.sender.Send(ctx, http.MethodPost, internalPath, bytes.NewBuffer(payload), out)
+	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return transport.NewResponse(meta, out), nil
 }
 
-func (s *Service) DepositInvestment(ctx context.Context, req InvestmentDepositRequest) (*InternalResponse, error) {
+func (s *Service) DepositInvestment(ctx context.Context, req InvestmentDepositRequest) (*transport.Response[InternalResponse], error) {
 	return s.Internal(ctx, InternalRequest{
 		Currency: req.Currency,
 		From:     AccountDefault,
@@ -85,7 +86,7 @@ func (s *Service) DepositInvestment(ctx context.Context, req InvestmentDepositRe
 	})
 }
 
-func (s *Service) WithdrawInvestment(ctx context.Context, req InvestmentWithdrawRequest) (*InternalResponse, error) {
+func (s *Service) WithdrawInvestment(ctx context.Context, req InvestmentWithdrawRequest) (*transport.Response[InternalResponse], error) {
 	return s.Internal(ctx, InternalRequest{
 		Currency: req.Currency,
 		From:     AccountInvestment,

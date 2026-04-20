@@ -49,15 +49,16 @@ type CreateResponse struct {
 	Data Trade `json:"data"`
 }
 
-func (s *Service) Create(ctx context.Context, req CreateRequest) (*CreateResponse, error) {
+func (s *Service) Create(ctx context.Context, req CreateRequest) (*transport.Response[CreateResponse], error) {
 	payload, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
 	out := &CreateResponse{}
-	if err := s.sender.Send(ctx, http.MethodPost, createPath, bytes.NewBuffer(payload), out); err != nil {
+	meta, err := s.sender.Send(ctx, http.MethodPost, createPath, bytes.NewBuffer(payload), out)
+	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return transport.NewResponse(meta, out), nil
 }

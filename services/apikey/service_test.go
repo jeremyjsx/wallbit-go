@@ -35,8 +35,8 @@ func TestServiceRevoke(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Message != "API Key revoked successfully." {
-		t.Fatalf("unexpected message %q", out.Message)
+	if out.Payload.Message != "API Key revoked successfully." {
+		t.Fatalf("unexpected message %q", out.Payload.Message)
 	}
 }
 

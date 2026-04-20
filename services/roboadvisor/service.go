@@ -105,36 +105,39 @@ type WithdrawResponse struct {
 	Data Transaction `json:"data"`
 }
 
-func (s *Service) GetBalance(ctx context.Context) (*GetBalanceResponse, error) {
+func (s *Service) GetBalance(ctx context.Context) (*transport.Response[GetBalanceResponse], error) {
 	out := &GetBalanceResponse{}
-	if err := s.sender.Send(ctx, http.MethodGet, balancePath, nil, out); err != nil {
+	meta, err := s.sender.Send(ctx, http.MethodGet, balancePath, nil, out)
+	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return transport.NewResponse(meta, out), nil
 }
 
-func (s *Service) Deposit(ctx context.Context, req DepositRequest) (*DepositResponse, error) {
+func (s *Service) Deposit(ctx context.Context, req DepositRequest) (*transport.Response[DepositResponse], error) {
 	payload, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
 	out := &DepositResponse{}
-	if err := s.sender.Send(ctx, http.MethodPost, depositPath, bytes.NewBuffer(payload), out); err != nil {
+	meta, err := s.sender.Send(ctx, http.MethodPost, depositPath, bytes.NewBuffer(payload), out)
+	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return transport.NewResponse(meta, out), nil
 }
 
-func (s *Service) Withdraw(ctx context.Context, req WithdrawRequest) (*WithdrawResponse, error) {
+func (s *Service) Withdraw(ctx context.Context, req WithdrawRequest) (*transport.Response[WithdrawResponse], error) {
 	payload, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}
 
 	out := &WithdrawResponse{}
-	if err := s.sender.Send(ctx, http.MethodPost, withdrawPath, bytes.NewBuffer(payload), out); err != nil {
+	meta, err := s.sender.Send(ctx, http.MethodPost, withdrawPath, bytes.NewBuffer(payload), out)
+	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return transport.NewResponse(meta, out), nil
 }

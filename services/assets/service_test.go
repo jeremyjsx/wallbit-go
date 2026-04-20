@@ -56,11 +56,11 @@ func TestServiceGet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.Symbol != "BRK.B" {
-		t.Fatalf("unexpected symbol %q", out.Data.Symbol)
+	if out.Payload.Data.Symbol != "BRK.B" {
+		t.Fatalf("unexpected symbol %q", out.Payload.Data.Symbol)
 	}
-	if out.Data.Name != "Berkshire Hathaway Inc." {
-		t.Fatalf("unexpected name %q", out.Data.Name)
+	if out.Payload.Data.Name != "Berkshire Hathaway Inc." {
+		t.Fatalf("unexpected name %q", out.Payload.Data.Name)
 	}
 }
 
@@ -133,20 +133,20 @@ func TestServiceList(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.CurrentPage != 2 {
-		t.Fatalf("expected current_page=2, got %d", out.CurrentPage)
+	if out.Payload.CurrentPage != 2 {
+		t.Fatalf("expected current_page=2, got %d", out.Payload.CurrentPage)
 	}
-	if len(out.Data) != 1 {
-		t.Fatalf("expected one asset, got %d", len(out.Data))
+	if len(out.Payload.Data) != 1 {
+		t.Fatalf("expected one asset, got %d", len(out.Payload.Data))
 	}
-	if out.Data[0].Symbol != "AAPL" {
-		t.Fatalf("unexpected symbol %q", out.Data[0].Symbol)
+	if out.Payload.Data[0].Symbol != "AAPL" {
+		t.Fatalf("unexpected symbol %q", out.Payload.Data[0].Symbol)
 	}
-	if out.Data[0].Dividend == nil {
+	if out.Payload.Data[0].Dividend == nil {
 		t.Fatal("expected dividend data")
 	}
-	if out.Data[0].Dividend.Amount == nil || *out.Data[0].Dividend.Amount != 0.24 {
-		t.Fatalf("unexpected dividend amount: %v", out.Data[0].Dividend.Amount)
+	if out.Payload.Data[0].Dividend.Amount == nil || *out.Payload.Data[0].Dividend.Amount != 0.24 {
+		t.Fatalf("unexpected dividend amount: %v", out.Payload.Data[0].Dividend.Amount)
 	}
 }
 
@@ -172,8 +172,8 @@ func TestServiceListWithoutFilters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Count != 0 {
-		t.Fatalf("expected count=0, got %d", out.Count)
+	if out.Payload.Count != 0 {
+		t.Fatalf("expected count=0, got %d", out.Payload.Count)
 	}
 }
 

@@ -11,6 +11,19 @@
 //
 //	client, err := wallbit.NewClient(os.Getenv("WALLBIT_API_KEY"))
 //
+// # Responses
+//
+// Every service method returns a [*transport.Response] generic wrapper
+// pairing the decoded payload (Payload) with the HTTP envelope
+// (StatusCode, Header, RequestID). RequestID is the X-Request-ID header
+// from the server and is useful when reporting issues to Wallbit support.
+//
+//	res, err := client.Balance.GetChecking(ctx)
+//	if err != nil {
+//	    return err
+//	}
+//	fmt.Println(res.StatusCode, res.RequestID, res.Payload.Data)
+//
 // # Configuration
 //
 // Customize the client with functional options: [WithBaseURL],

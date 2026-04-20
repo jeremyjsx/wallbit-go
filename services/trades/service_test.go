@@ -53,11 +53,11 @@ func TestServiceCreate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data.Symbol != "AAPL" {
-		t.Fatalf("expected symbol AAPL, got %q", out.Data.Symbol)
+	if out.Payload.Data.Symbol != "AAPL" {
+		t.Fatalf("expected symbol AAPL, got %q", out.Payload.Data.Symbol)
 	}
-	if out.Data.Status != "REQUESTED" {
-		t.Fatalf("expected status REQUESTED, got %q", out.Data.Status)
+	if out.Payload.Data.Status != "REQUESTED" {
+		t.Fatalf("expected status REQUESTED, got %q", out.Payload.Data.Status)
 	}
 }
 

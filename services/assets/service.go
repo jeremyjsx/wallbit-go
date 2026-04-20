@@ -67,19 +67,20 @@ type GetResponse struct {
 	Data Asset `json:"data"`
 }
 
-func (s *Service) Get(ctx context.Context, symbol string) (*GetResponse, error) {
+func (s *Service) Get(ctx context.Context, symbol string) (*transport.Response[GetResponse], error) {
 	if strings.TrimSpace(symbol) == "" {
 		return nil, ErrEmptySymbol
 	}
 	path := fmt.Sprintf("%s/%s", listPath, url.PathEscape(symbol))
 	out := &GetResponse{}
-	if err := s.sender.Send(ctx, http.MethodGet, path, nil, out); err != nil {
+	meta, err := s.sender.Send(ctx, http.MethodGet, path, nil, out)
+	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return transport.NewResponse(meta, out), nil
 }
 
-func (s *Service) List(ctx context.Context, req *ListRequest) (*ListResponse, error) {
+func (s *Service) List(ctx context.Context, req *ListRequest) (*transport.Response[ListResponse], error) {
 	path := listPath
 	if req != nil {
 		q := url.Values{}
@@ -101,8 +102,9 @@ func (s *Service) List(ctx context.Context, req *ListRequest) (*ListResponse, er
 	}
 
 	out := &ListResponse{}
-	if err := s.sender.Send(ctx, http.MethodGet, path, nil, out); err != nil {
+	meta, err := s.sender.Send(ctx, http.MethodGet, path, nil, out)
+	if err != nil {
 		return nil, err
 	}
-	return out, nil
+	return transport.NewResponse(meta, out), nil
 }
