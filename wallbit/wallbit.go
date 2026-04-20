@@ -177,20 +177,11 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 	ctx := req.Context()
 	max := c.maxAttempts()
 
-	// attempt is 0-indexed because the retry bookkeeping (failureIndex in
-	// retryWaitBeforeNextAttempt) expects a 0-based counter; the
-	// user-visible Attempt field on RequestMeta/ResponseMeta is derived by
-	// adding one so hooks see a natural "attempt 1, 2, 3" sequence.
+	// attempt is 0-indexed; hooks see the 1-indexed value via attemptNumber.
 	for attempt := range max {
 		attemptNumber := attempt + 1
 		reqTry := req.Clone(ctx)
-		if h := c.cfg.Hook; h != nil {
-			path := ""
-			if reqTry.URL != nil {
-				path = reqTry.URL.Path
-			}
-			h.OnRequestStart(&RequestMeta{Method: reqTry.Method, Path: path, Attempt: attemptNumber})
-		}
+		c.emitRequestStart(reqTry, attemptNumber)
 
 		start := time.Now()
 		res, err := c.cfg.HTTPClient.Do(reqTry)
@@ -200,9 +191,7 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 		if res != nil {
 			statusCode = res.StatusCode
 		}
-		if h := c.cfg.Hook; h != nil {
-			h.OnRequestDone(&ResponseMeta{StatusCode: statusCode, Duration: dur, Attempt: attemptNumber})
-		}
+		c.emitRequestDone(statusCode, dur, attemptNumber)
 
 		if err != nil {
 			if attempt < max-1 && isIdempotentHTTPMethod(req.Method) {
@@ -216,11 +205,6 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 		}
 
 		limit := c.maxResponseBytes()
-		// Reading one byte past the limit lets us detect overflow without a
-		// second syscall: io.ReadAll returns cleanly when the LimitReader
-		// reaches EOF, and we compare lengths after the fact. A plain
-		// LimitReader of exactly `limit` would silently truncate instead of
-		// signaling overflow.
 		body, rerr := io.ReadAll(io.LimitReader(res.Body, limit+1))
 		res.Body.Close()
 		if rerr != nil {
@@ -250,15 +234,46 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 			return meta, apiErr
 		}
 
-		if dest == nil || len(body) == 0 || statusCode == http.StatusNoContent {
-			return meta, nil
-		}
-		if err := json.Unmarshal(body, dest); err != nil {
+		if err := decodeBody(body, dest, statusCode); err != nil {
 			return meta, err
 		}
 		return meta, nil
 	}
 	return nil, errors.New("wallbit client: internal error: retry loop exited without return")
+}
+
+// emitRequestStart fires the OnRequestStart hook when one is configured.
+// Centralized so do() doesn't carry hook plumbing inline.
+func (c *Client) emitRequestStart(req *http.Request, attempt int) {
+	h := c.cfg.Hook
+	if h == nil {
+		return
+	}
+	path := ""
+	if req.URL != nil {
+		path = req.URL.Path
+	}
+	h.OnRequestStart(&RequestMeta{Method: req.Method, Path: path, Attempt: attempt})
+}
+
+// emitRequestDone fires the OnRequestDone hook when one is configured.
+func (c *Client) emitRequestDone(statusCode int, dur time.Duration, attempt int) {
+	h := c.cfg.Hook
+	if h == nil {
+		return
+	}
+	h.OnRequestDone(&ResponseMeta{StatusCode: statusCode, Duration: dur, Attempt: attempt})
+}
+
+// decodeBody unmarshals body into dest unless the response carries no
+// payload to decode (nil dest, empty body, or 204 No Content). io.ReadAll
+// already returned a usable slice when the LimitReader hit EOF, so a
+// length check is sufficient to cover both empty bodies and 204s.
+func decodeBody(body []byte, dest any, statusCode int) error {
+	if dest == nil || len(body) == 0 || statusCode == http.StatusNoContent {
+		return nil
+	}
+	return json.Unmarshal(body, dest)
 }
 
 type senderAdapter struct {
