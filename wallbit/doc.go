@@ -1,8 +1,8 @@
 // Package wallbit is a Go SDK for the Wallbit public API
 // (https://developer.wallbit.io). It provides a single [Client] composed of
 // per-resource service handles (Balance, Transactions, Trades, Fees, Wallets,
-// Assets, Operations, RoboAdvisor, Cards, AccountDetails, APIKey) backed by
-// a configurable HTTP transport.
+// Assets, Operations, RoboAdvisor, Cards, AccountDetails, APIKey, Rates)
+// backed by a configurable HTTP transport.
 //
 // # Authentication
 //
