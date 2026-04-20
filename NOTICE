@@ -1,0 +1,11 @@
+wallbit-go
+Copyright 2026 JeremyDevCode
+
+This product includes software developed by JeremyDevCode
+(https://github.com/jeremyjsx/wallbit-go).
+
+This is an unofficial, community-maintained Go SDK for the Wallbit public
+API (https://developer.wallbit.io). This project is not affiliated with,
+endorsed by, or sponsored by Wallbit. "Wallbit" is a trademark of its
+respective owner and is used here solely to describe the API this library
+targets (nominative use).
