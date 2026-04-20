@@ -27,8 +27,33 @@
 // # Configuration
 //
 // Customize the client with functional options: [WithBaseURL],
-// [WithHTTPClient], [WithTimeout], [WithUserAgent], [WithRetryPolicy] and
-// [WithHook]. Options may be passed in any order.
+// [WithHTTPClient], [WithTimeout], [WithUserAgent], [WithRetryPolicy],
+// [WithMaxResponseBytes] and [WithHook]. Options may be passed in any
+// order.
+//
+// # Defaults
+//
+// [NewClient] applies these defaults; all are overridable via the
+// matching option:
+//
+//   - BaseURL: https://api.wallbit.io (HTTPS-only; see Security below).
+//   - HTTP timeout: 30s. Covers tail latency during API incidents
+//     without leaking goroutines when the server never replies.
+//     Override with [WithTimeout] or supply a pre-configured
+//     [*net/http.Client] via [WithHTTPClient].
+//   - Retry policy: [DefaultRetryPolicy] — 3 attempts, 250ms base
+//     delay, 2s cap, exponential with equal-jitter. Worst-case added
+//     wait for a failing call is ~750ms of backoff on top of the
+//     server's own response times. See the Retries section below for
+//     which requests are eligible.
+//   - Max response body: [DefaultMaxResponseBytes] (10 MiB). Guards
+//     against runaway or hostile responses; overflow returns
+//     [ErrResponseTooLarge] instead of a truncated payload. Raise it
+//     with [WithMaxResponseBytes] if you consume deliberately large
+//     list endpoints.
+//   - User-Agent: wallbit-go-sdk/<version>. Version resolves at build
+//     time via -ldflags, then via [runtime/debug.ReadBuildInfo], with
+//     "dev" as the final fallback. Override with [WithUserAgent].
 //
 // # Errors
 //
