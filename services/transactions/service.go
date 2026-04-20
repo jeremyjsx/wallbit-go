@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"context"
+	"iter"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -98,4 +99,46 @@ func (s *Service) List(ctx context.Context, req *ListRequest) (*transport.Respon
 	}
 
 	return transport.SendJSON(ctx, s.sender, http.MethodGet, path, nil, &ListResponse{})
+}
+
+// ListAll returns an iterator that walks every page of results for the given
+// filters, starting from req.Page if set (default 1) and advancing one page
+// per batch until current_page >= pages. It issues one HTTP request per
+// page; pass a higher Limit to reduce round trips.
+//
+// The iterator stops early when yield returns false, when ctx is cancelled,
+// or on the first error. Errors are yielded with a zero-value Transaction.
+// The caller's *ListRequest is not mutated.
+func (s *Service) ListAll(ctx context.Context, req *ListRequest) iter.Seq2[Transaction, error] {
+	return func(yield func(Transaction, error) bool) {
+		var pageReq ListRequest
+		if req != nil {
+			pageReq = *req
+		}
+		page := 1
+		if pageReq.Page != nil {
+			page = *pageReq.Page
+		}
+		for {
+			if err := ctx.Err(); err != nil {
+				yield(Transaction{}, err)
+				return
+			}
+			pageReq.Page = &page
+			out, err := s.List(ctx, &pageReq)
+			if err != nil {
+				yield(Transaction{}, err)
+				return
+			}
+			for _, tx := range out.Payload.Data.Data {
+				if !yield(tx, nil) {
+					return
+				}
+			}
+			if len(out.Payload.Data.Data) == 0 || out.Payload.Data.CurrentPage >= out.Payload.Data.Pages {
+				return
+			}
+			page++
+		}
+	}
 }

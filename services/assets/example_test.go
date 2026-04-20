@@ -42,3 +42,21 @@ func ExampleService_List() {
 
 	fmt.Printf("found %d assets across %d pages\n", res.Payload.Count, res.Payload.Pages)
 }
+
+func ExampleService_ListAll() {
+	client, err := wallbit.NewClient("YOUR_API_KEY")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var svc *assets.Service = client.Assets
+	for a, err := range svc.ListAll(context.Background(), &assets.ListRequest{
+		Category: "TECHNOLOGY",
+		Limit:    wallbit.Ptr(50),
+	}) {
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s — %s @ %.2f USD\n", a.Symbol, a.Name, a.Price)
+	}
+}

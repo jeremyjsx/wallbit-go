@@ -28,3 +28,21 @@ func ExampleService_List() {
 		fmt.Printf("%s %s %.2f %s\n", tx.UUID, tx.Type, tx.SourceAmount, tx.SourceCurrency.Code)
 	}
 }
+
+func ExampleService_ListAll() {
+	client, err := wallbit.NewClient("YOUR_API_KEY")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var svc *transactions.Service = client.Transactions
+	for tx, err := range svc.ListAll(context.Background(), &transactions.ListRequest{
+		Status: "COMPLETED",
+		Limit:  wallbit.Ptr(50),
+	}) {
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("%s %s %.2f %s\n", tx.UUID, tx.Type, tx.SourceAmount, tx.SourceCurrency.Code)
+	}
+}
