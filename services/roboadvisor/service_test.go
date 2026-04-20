@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/jeremyjsx/wallbit-go/services/roboadvisor"
 	"github.com/jeremyjsx/wallbit-go/wallbit"
@@ -150,6 +151,10 @@ func TestServiceDeposit(t *testing.T) {
 	}
 	if out.Payload.Data.Status != "PENDING" {
 		t.Fatalf("unexpected status %q", out.Payload.Data.Status)
+	}
+	wantTime := time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)
+	if !out.Payload.Data.CreatedAt.Equal(wantTime) {
+		t.Fatalf("CreatedAt: got %s, want %s", out.Payload.Data.CreatedAt, wantTime)
 	}
 }
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/jeremyjsx/wallbit-go/services/operations"
 	"github.com/jeremyjsx/wallbit-go/wallbit"
@@ -56,6 +57,10 @@ func TestServiceInternal(t *testing.T) {
 	}
 	if out.Payload.Data.Status != "COMPLETED" {
 		t.Fatalf("expected status COMPLETED, got %q", out.Payload.Data.Status)
+	}
+	wantTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	if !out.Payload.Data.CreatedAt.Equal(wantTime) {
+		t.Fatalf("CreatedAt: got %s, want %s", out.Payload.Data.CreatedAt, wantTime)
 	}
 }
 

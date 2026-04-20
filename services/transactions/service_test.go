@@ -72,6 +72,14 @@ func TestServiceList(t *testing.T) {
 	if out.Payload.Data.Data[1].ExternalAddress != nil {
 		t.Fatalf("expected nil external_address in second transaction, got %v", out.Payload.Data.Data[1].ExternalAddress)
 	}
+	wantFirst := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	wantSecond := time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)
+	if !out.Payload.Data.Data[0].CreatedAt.Equal(wantFirst) {
+		t.Fatalf("Data[0].CreatedAt: got %s, want %s", out.Payload.Data.Data[0].CreatedAt, wantFirst)
+	}
+	if !out.Payload.Data.Data[1].CreatedAt.Equal(wantSecond) {
+		t.Fatalf("Data[1].CreatedAt: got %s, want %s", out.Payload.Data.Data[1].CreatedAt, wantSecond)
+	}
 }
 
 func TestServiceListWithoutFilters(t *testing.T) {

@@ -3,6 +3,7 @@ package roboadvisor
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/jeremyjsx/wallbit-go/transport"
 )
@@ -92,7 +93,7 @@ type Transaction struct {
 	Type      string  `json:"type"`
 	Amount    float64 `json:"amount"`
 	Status    string  `json:"status"`
-	CreatedAt string  `json:"created_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type DepositResponse struct {

@@ -3,6 +3,7 @@ package operations
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/jeremyjsx/wallbit-go/transport"
 )
@@ -53,7 +54,7 @@ type Transaction struct {
 	SourceAmount    float64  `json:"source_amount"`
 	DestAmount      float64  `json:"dest_amount"`
 	Status          string   `json:"status"`
-	CreatedAt       string   `json:"created_at"`
+	CreatedAt       time.Time `json:"created_at"`
 	Comment         *string  `json:"comment"`
 }
 

@@ -3,6 +3,7 @@ package trades
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/jeremyjsx/wallbit-go/transport"
 )
@@ -39,8 +40,8 @@ type Trade struct {
 	LimitPrice  *float64 `json:"limit_price"`
 	StopPrice   *float64 `json:"stop_price"`
 	TimeInForce *string  `json:"time_in_force"`
-	CreatedAt   string   `json:"created_at"`
-	UpdatedAt   string   `json:"updated_at"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type CreateResponse struct {
