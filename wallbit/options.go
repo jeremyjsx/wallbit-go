@@ -36,6 +36,12 @@ type Config struct {
 	// AllowInsecureHTTPForTesting permits HTTP (non-TLS) base URLs.
 	// Keep this false in production.
 	AllowInsecureHTTPForTesting bool
+	// MaxResponseBytes caps the number of bytes the client reads from any
+	// HTTP response body. When a response exceeds this bound the client
+	// returns [ErrResponseTooLarge] instead of a partial payload, so a
+	// hostile or buggy upstream cannot exhaust process memory. Zero or
+	// negative values select the default (see [DefaultMaxResponseBytes]).
+	MaxResponseBytes int64
 }
 
 // RetryPolicy controls how the [Client] retries idempotent requests on
@@ -186,6 +192,21 @@ func WithUserAgent(userAgent string) Option {
 	}
 }
 
+// WithMaxResponseBytes overrides the default cap on HTTP response body
+// size. The client reads up to n bytes from res.Body and returns
+// [ErrResponseTooLarge] if the server sends more, without decoding the
+// partial payload. Values <= 0 are ignored so that [DefaultMaxResponseBytes]
+// remains in effect; pass a very large value if you legitimately need to
+// consume multi-gigabyte responses.
+func WithMaxResponseBytes(n int64) Option {
+	return func(cfg *Config) error {
+		if n > 0 {
+			cfg.MaxResponseBytes = n
+		}
+		return nil
+	}
+}
+
 // WithRetryPolicy sets automatic retries for idempotent methods (GET, HEAD,
 // DELETE, OPTIONS, TRACE) on transport failures and on retryable API
 // responses (HTTP 429 and 5xx; see [IsRetryable]). POST, PATCH and PUT are
@@ -223,6 +244,9 @@ func mergeClientConfig(cfg *Config) (*Config, error) {
 	}
 	if cfg.RetryPolicy.MaxAttempts > 0 || cfg.RetryPolicy.BaseDelay > 0 || cfg.RetryPolicy.MaxDelay > 0 {
 		out.RetryPolicy = cfg.RetryPolicy
+	}
+	if cfg.MaxResponseBytes > 0 {
+		out.MaxResponseBytes = cfg.MaxResponseBytes
 	}
 	out.Hook = cfg.Hook
 	out.AllowInsecureHTTPForTesting = cfg.AllowInsecureHTTPForTesting

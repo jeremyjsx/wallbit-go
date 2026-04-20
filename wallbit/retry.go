@@ -113,3 +113,15 @@ func (c *Client) maxAttempts() int {
 	}
 	return n
 }
+
+// maxResponseBytes returns the effective body-size cap for this client,
+// falling back to [DefaultMaxResponseBytes] when the configuration does
+// not specify a positive value. Centralizing the default here keeps the
+// read path in [Client.do] free of branching and makes it trivial for
+// tests to inject a small limit via [WithMaxResponseBytes].
+func (c *Client) maxResponseBytes() int64 {
+	if c.cfg.MaxResponseBytes > 0 {
+		return c.cfg.MaxResponseBytes
+	}
+	return DefaultMaxResponseBytes
+}

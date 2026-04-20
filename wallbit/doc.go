@@ -7,7 +7,7 @@
 // # Authentication
 //
 // All requests are authenticated using an API key sent in the X-API-Key
-// header. Obtain one from the Wallbit dashboard under Settings → API Keys.
+// header. Obtain one from the Wallbit dashboard under Agents → Create Agent.
 //
 //	client, err := wallbit.NewClient(os.Getenv("WALLBIT_API_KEY"))
 //

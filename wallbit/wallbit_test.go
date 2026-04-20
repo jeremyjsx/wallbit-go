@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -86,5 +87,74 @@ func TestClientBlocksCrossHostRedirect(t *testing.T) {
 	_, err = c.Balance.GetChecking(context.Background())
 	if err == nil {
 		t.Fatal("expected error due to blocked cross-host redirect")
+	}
+}
+
+func TestClientEnforcesMaxResponseBytes(t *testing.T) {
+	t.Parallel()
+
+	const limit = 128
+	big := `{"data":[` + strings.Repeat(`"x",`, limit) + `"x"]}`
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("X-Request-ID", "req-too-large")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(big))
+	}))
+	defer server.Close()
+
+	c, err := NewClient(
+		"test-key",
+		WithBaseURL(server.URL),
+		WithInsecureHTTPForTesting(),
+		WithRetryPolicy(RetryPolicy{MaxAttempts: 1, BaseDelay: time.Millisecond, MaxDelay: 10 * time.Millisecond}),
+		WithMaxResponseBytes(limit),
+	)
+	if err != nil {
+		t.Fatalf("unexpected client construction error: %v", err)
+	}
+
+	_, err = c.Balance.GetChecking(context.Background())
+	if !errors.Is(err, ErrResponseTooLarge) {
+		t.Fatalf("expected ErrResponseTooLarge, got %v", err)
+	}
+}
+
+func TestClientAcceptsResponseUpToMaxResponseBytes(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"data":[]}`))
+	}))
+	defer server.Close()
+
+	c, err := NewClient(
+		"test-key",
+		WithBaseURL(server.URL),
+		WithInsecureHTTPForTesting(),
+		WithRetryPolicy(RetryPolicy{MaxAttempts: 1, BaseDelay: time.Millisecond, MaxDelay: 10 * time.Millisecond}),
+		WithMaxResponseBytes(64),
+	)
+	if err != nil {
+		t.Fatalf("unexpected client construction error: %v", err)
+	}
+
+	if _, err := c.Balance.GetChecking(context.Background()); err != nil {
+		t.Fatalf("unexpected error on small response: %v", err)
+	}
+}
+
+func TestClientUsesDefaultMaxResponseBytesWhenUnset(t *testing.T) {
+	t.Parallel()
+
+	c, err := NewClient("test-key")
+	if err != nil {
+		t.Fatalf("unexpected client construction error: %v", err)
+	}
+	if got := c.maxResponseBytes(); got != DefaultMaxResponseBytes {
+		t.Fatalf("maxResponseBytes() = %d, want %d", got, DefaultMaxResponseBytes)
 	}
 }

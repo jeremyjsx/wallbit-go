@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -24,6 +25,18 @@ import (
 )
 
 var ErrMissingAPIKey = errors.New("wallbit client requires a non-empty api key")
+
+// ErrResponseTooLarge is returned by the client when an HTTP response body
+// exceeds the configured byte cap (see [Config.MaxResponseBytes] and
+// [WithMaxResponseBytes]). The partial payload is discarded because a
+// truncated body cannot be distinguished from a well-formed short one by
+// the JSON decoder.
+var ErrResponseTooLarge = errors.New("wallbit client: response body exceeds configured size limit")
+
+// DefaultMaxResponseBytes is the cap applied to HTTP response bodies when
+// neither [Config.MaxResponseBytes] nor [WithMaxResponseBytes] supplies a
+// positive value.
+const DefaultMaxResponseBytes int64 = 10 << 20
 
 type Client struct {
 	apiKey string
@@ -197,7 +210,13 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 			return nil, err
 		}
 
-		body, rerr := io.ReadAll(res.Body)
+		limit := c.maxResponseBytes()
+		// Reading one byte past the limit lets us detect overflow without a
+		// second syscall: io.ReadAll returns cleanly when the LimitReader
+		// reaches EOF, and we compare lengths after the fact. A plain
+		// LimitReader of exactly `limit` would silently truncate instead of
+		// signaling overflow.
+		body, rerr := io.ReadAll(io.LimitReader(res.Body, limit+1))
 		res.Body.Close()
 		if rerr != nil {
 			return nil, rerr
@@ -208,6 +227,10 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 			StatusCode: statusCode,
 			Header:     res.Header,
 			RequestID:  requestID,
+		}
+
+		if int64(len(body)) > limit {
+			return meta, fmt.Errorf("%w: limit %d bytes", ErrResponseTooLarge, limit)
 		}
 
 		if statusCode >= 400 {
