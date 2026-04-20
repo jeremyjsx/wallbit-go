@@ -16,6 +16,8 @@ type testHook struct {
 	startAttempts   []int
 	doneAttempts    []int
 	doneStatusCodes []int
+	doneMethods     []string
+	donePaths       []string
 }
 
 func (h *testHook) OnRequestStart(m *RequestMeta) {
@@ -26,6 +28,8 @@ func (h *testHook) OnRequestDone(m *ResponseMeta) {
 	h.done++
 	h.doneAttempts = append(h.doneAttempts, m.Attempt)
 	h.doneStatusCodes = append(h.doneStatusCodes, m.StatusCode)
+	h.doneMethods = append(h.doneMethods, m.Method)
+	h.donePaths = append(h.donePaths, m.Path)
 }
 
 func TestNewClientAndOptions(t *testing.T) {
@@ -68,6 +72,12 @@ func TestNewClientAndOptions(t *testing.T) {
 	}
 	if len(hook.doneAttempts) != 1 || hook.doneAttempts[0] != 1 {
 		t.Fatalf("OnRequestDone attempts: got %v, want [1]", hook.doneAttempts)
+	}
+	if len(hook.doneMethods) != 1 || hook.doneMethods[0] != http.MethodGet {
+		t.Fatalf("OnRequestDone methods: got %v, want [GET]", hook.doneMethods)
+	}
+	if len(hook.donePaths) != 1 || !strings.HasPrefix(hook.donePaths[0], "/api/public/v1/balance") {
+		t.Fatalf("OnRequestDone paths: got %v", hook.donePaths)
 	}
 }
 

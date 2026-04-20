@@ -195,7 +195,7 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 		if res != nil {
 			statusCode = res.StatusCode
 		}
-		c.emitRequestDone(statusCode, dur, attemptNumber)
+		c.emitRequestDone(reqTry, statusCode, dur, attemptNumber)
 
 		if err != nil {
 			if attempt < max-1 && isIdempotentHTTPMethod(req.Method) {
@@ -261,12 +261,22 @@ func (c *Client) emitRequestStart(req *http.Request, attempt int) {
 }
 
 // emitRequestDone fires the OnRequestDone hook when one is configured.
-func (c *Client) emitRequestDone(statusCode int, dur time.Duration, attempt int) {
+func (c *Client) emitRequestDone(req *http.Request, statusCode int, dur time.Duration, attempt int) {
 	h := c.cfg.Hook
 	if h == nil {
 		return
 	}
-	h.OnRequestDone(&ResponseMeta{StatusCode: statusCode, Duration: dur, Attempt: attempt})
+	path := ""
+	if req.URL != nil {
+		path = req.URL.Path
+	}
+	h.OnRequestDone(&ResponseMeta{
+		Method:     req.Method,
+		Path:       path,
+		StatusCode: statusCode,
+		Duration:   dur,
+		Attempt:    attempt,
+	})
 }
 
 // decodeBody unmarshals body into dest unless the response carries no

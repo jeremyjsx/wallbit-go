@@ -93,10 +93,12 @@ type RequestMeta struct {
 // HTTP attempt. StatusCode is 0 when the transport returned an error before
 // receiving a response.
 //
-// Attempt mirrors [RequestMeta.Attempt] so a hook holding only the
-// response meta can still tag metrics with the attempt number without
-// correlating callbacks.
+// Method, Path and Attempt mirror the values passed to [Hook.OnRequestStart]
+// so a hook holding only the response meta can tag metrics or log a single
+// line per attempt without correlating callbacks.
 type ResponseMeta struct {
+	Method     string
+	Path       string
 	StatusCode int
 	Duration   time.Duration
 	Attempt    int

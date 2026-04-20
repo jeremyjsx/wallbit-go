@@ -70,6 +70,19 @@
 // POST, PATCH and PUT are never retried automatically. Backoff is exponential
 // and honors Retry-After.
 //
+// # Observability
+//
+// Register a [Hook] via [WithHook] to observe every HTTP attempt (including
+// retries). For standard structured logging, use [SlogHook] which adapts a
+// [*log/slog.Logger] to the [Hook] interface and emits one record per
+// attempt with method, path, attempt, status and duration_ms. Filter volume
+// by configuring the logger's level; request.start is emitted at Debug,
+// request.done at Info/Warn/Error depending on status.
+//
+//	client, _ := wallbit.NewClient(key,
+//	    wallbit.WithHook(wallbit.SlogHook(slog.Default())),
+//	)
+//
 // # Security
 //
 // HTTPS is required by default; non-HTTPS base URLs are rejected unless

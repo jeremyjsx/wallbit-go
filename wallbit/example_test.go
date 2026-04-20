@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
+	"os"
 	"time"
 
 	"github.com/jeremyjsx/wallbit-go/wallbit"
@@ -51,6 +53,25 @@ func ExampleNewClientFromConfig() {
 	}
 
 	client, err := wallbit.NewClientFromConfig("YOUR_API_KEY", cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_ = client
+}
+
+// ExampleSlogHook wires a [log/slog.Logger] to the client's request
+// lifecycle. Every HTTP attempt emits a structured record with method,
+// path, attempt, status and duration_ms. Filter volume with the logger's
+// level; request.start is emitted at Debug, request.done at Info/Warn/Error
+// based on status.
+func ExampleSlogHook() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	client, err := wallbit.NewClient(
+		"YOUR_API_KEY",
+		wallbit.WithHook(wallbit.SlogHook(logger)),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
