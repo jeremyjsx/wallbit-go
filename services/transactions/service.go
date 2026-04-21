@@ -13,14 +13,20 @@ import (
 
 const listPath = "/api/public/v1/transactions"
 
+// Service issues requests against the Wallbit transactions endpoint.
 type Service struct {
 	sender transport.Sender
 }
 
+// NewService wires a [Service] to the given [transport.Sender].
 func NewService(sender transport.Sender) *Service {
 	return &Service{sender: sender}
 }
 
+// ListRequest parameterises a call to [Service.List]. Every field is
+// optional; nil/zero values are omitted from the query string. Page and
+// Limit are pointers so the caller can distinguish "unset" from "0"; use
+// [github.com/jeremyjsx/wallbit-go/wallbit.Ptr] as a convenience.
 type ListRequest struct {
 	Page       *int
 	Limit      *int
@@ -33,11 +39,16 @@ type ListRequest struct {
 	ToAmount   *float64
 }
 
+// CurrencyRef is the embedded currency descriptor carried on each
+// [Transaction]. Code is the ISO-like currency identifier, Alias is the
+// human-friendly label surfaced by the API.
 type CurrencyRef struct {
 	Code  string `json:"code"`
 	Alias string `json:"alias"`
 }
 
+// Transaction is a single row returned by [Service.List]. ExternalAddress
+// and Comment are nil when the API omits them.
 type Transaction struct {
 	UUID            string      `json:"uuid"`
 	Type            string      `json:"type"`
@@ -51,6 +62,9 @@ type Transaction struct {
 	Comment         *string     `json:"comment"`
 }
 
+// ListData is the paginated payload embedded in [ListResponse]. CurrentPage
+// equals Pages on the last page; Count is the total number of rows across
+// every page.
 type ListData struct {
 	Data        []Transaction `json:"data"`
 	Pages       int           `json:"pages"`
@@ -58,10 +72,14 @@ type ListData struct {
 	Count       int           `json:"count"`
 }
 
+// ListResponse is the top-level envelope for [Service.List].
 type ListResponse struct {
 	Data ListData `json:"data"`
 }
 
+// List fetches a single page of transactions matching req's filters. A nil
+// req returns the first page with server defaults. For lazy iteration over
+// every page, use [Service.ListAll].
 func (s *Service) List(ctx context.Context, req *ListRequest) (*transport.Response[ListResponse], error) {
 	path := listPath
 	if req != nil {

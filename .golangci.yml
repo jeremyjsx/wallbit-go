@@ -47,6 +47,16 @@ linters:
           - errcheck
           - gosec
           - revive
+      # Example functions in external test packages need an explicit
+      # `var svc *pkg.Service = client.Field` declaration so `go vet`
+      # can resolve the Service identifier and attach
+      # ExampleService_Method to the right method on pkg.go.dev.
+      # staticcheck flags the annotation as redundant (ST1023); the
+      # redundancy is intentional here.
+      - path: example_test\.go
+        linters:
+          - staticcheck
+        text: "(ST1023|QF1011):"
 
 formatters:
   enable:

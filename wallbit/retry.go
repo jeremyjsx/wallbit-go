@@ -103,7 +103,10 @@ func jitter(d time.Duration) time.Duration {
 		return d
 	}
 
-	return half + time.Duration(rand.Int64N(int64(half)+1))
+	// math/rand/v2 is intentional: jitter is not a security primitive,
+	// just load-spreading across many clients recovering from the same
+	// upstream incident.
+	return half + time.Duration(rand.Int64N(int64(half)+1)) //nolint:gosec // G404: non-cryptographic jitter is by design
 }
 
 func (c *Client) maxAttempts() int {

@@ -16,14 +16,18 @@ const getPath = "/api/public/v1/rates"
 // ErrEmptyCurrency is returned by [Service.Get] when source_currency or dest_currency is empty or whitespace-only.
 var ErrEmptyCurrency = errors.New("rates: source_currency and dest_currency are required")
 
+// Service issues requests against the Wallbit rates endpoint.
 type Service struct {
 	sender transport.Sender
 }
 
+// NewService wires a [Service] to the given [transport.Sender].
 func NewService(sender transport.Sender) *Service {
 	return &Service{sender: sender}
 }
 
+// GetRequest parameterises a rate lookup by source and destination currency.
+// Both fields are required (ISO-like currency codes, e.g. "USD", "ARS").
 type GetRequest struct {
 	SourceCurrency string
 	DestCurrency   string
@@ -39,10 +43,13 @@ type ExchangeRate struct {
 	UpdatedAt      *time.Time `json:"updated_at"`
 }
 
+// GetResponse is the top-level envelope for [Service.Get].
 type GetResponse struct {
 	Data ExchangeRate `json:"data"`
 }
 
+// Get fetches the current exchange rate between req.SourceCurrency and
+// req.DestCurrency. It returns [ErrEmptyCurrency] if either field is blank.
 func (s *Service) Get(ctx context.Context, req GetRequest) (*transport.Response[GetResponse], error) {
 	if strings.TrimSpace(req.SourceCurrency) == "" || strings.TrimSpace(req.DestCurrency) == "" {
 		return nil, ErrEmptyCurrency
