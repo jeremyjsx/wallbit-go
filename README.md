@@ -19,6 +19,12 @@ go get github.com/jeremyjsx/wallbit-go
 
 Requires Go 1.23 or newer.
 
+## Architecture
+
+![Architecture](docs/images/architecture.png)
+
+Your application and the SDK run in your deployment. Outbound traffic to Wallbit uses HTTPS over the public internet. For the full API surface, see [Endpoint coverage](#endpoint-coverage) below.
+
 ## Quickstart
 
 ```go
