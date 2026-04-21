@@ -13,9 +13,11 @@ func TestPtrReturnsAddressOfCopy(t *testing.T) {
 	if p == nil || *p != "jeremy" {
 		t.Fatalf("Ptr(%q) dereferenced to %v", src, p)
 	}
-	src = "mutated"
-	if *p != "jeremy" {
-		t.Fatalf("Ptr captured caller's variable by alias: got %q after mutation", *p)
+	// Mutating the returned pointee must not leak back into the
+	// caller's variable: Ptr takes its argument by value.
+	*p = "mutated"
+	if src != "jeremy" {
+		t.Fatalf("Ptr aliased caller's variable: src = %q after mutation", src)
 	}
 }
 

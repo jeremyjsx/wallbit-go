@@ -18,14 +18,19 @@ const listPath = "/api/public/v1/assets"
 // ErrEmptySymbol is returned by [Service.Get] when symbol is empty or whitespace-only.
 var ErrEmptySymbol = errors.New("assets: symbol is required")
 
+// Service issues requests against the Wallbit assets endpoints.
 type Service struct {
 	sender transport.Sender
 }
 
+// NewService wires a [Service] to the given [transport.Sender].
 func NewService(sender transport.Sender) *Service {
 	return &Service{sender: sender}
 }
 
+// ListRequest parameterises a call to [Service.List]. Every field is
+// optional; unset values are omitted from the query string. Use
+// [github.com/jeremyjsx/wallbit-go/wallbit.Ptr] to set Page and Limit.
 type ListRequest struct {
 	Category string
 	Search   string
@@ -33,6 +38,9 @@ type ListRequest struct {
 	Limit    *int
 }
 
+// Dividend captures the most recent dividend event announced for an asset,
+// when available. All fields are nil when the instrument does not pay
+// dividends or when the API has not published the event yet.
 type Dividend struct {
 	Amount      *float64 `json:"amount"`
 	Yield       *float64 `json:"yield"`
@@ -40,6 +48,8 @@ type Dividend struct {
 	PaymentDate *string  `json:"payment_date"`
 }
 
+// Asset is a tradable instrument row. Pointer fields carry the server's
+// own omitempty: they are nil whenever the API would omit them.
 type Asset struct {
 	Symbol        string    `json:"symbol"`
 	Name          string    `json:"name"`
@@ -57,6 +67,9 @@ type Asset struct {
 	Dividend      *Dividend `json:"dividend"`
 }
 
+// ListResponse is the top-level envelope for [Service.List]. CurrentPage
+// equals Pages on the last page; Count is the total number of rows across
+// every page.
 type ListResponse struct {
 	Data        []Asset `json:"data"`
 	Pages       int     `json:"pages"`
@@ -64,10 +77,13 @@ type ListResponse struct {
 	Count       int     `json:"count"`
 }
 
+// GetResponse is the top-level envelope for [Service.Get].
 type GetResponse struct {
 	Data Asset `json:"data"`
 }
 
+// Get fetches a single asset by its ticker symbol. An empty symbol returns
+// [ErrEmptySymbol].
 func (s *Service) Get(ctx context.Context, symbol string) (*transport.Response[GetResponse], error) {
 	if strings.TrimSpace(symbol) == "" {
 		return nil, ErrEmptySymbol
@@ -76,6 +92,9 @@ func (s *Service) Get(ctx context.Context, symbol string) (*transport.Response[G
 	return transport.SendJSON(ctx, s.sender, http.MethodGet, path, nil, &GetResponse{})
 }
 
+// List fetches a single page of assets matching req's filters. A nil req
+// returns the first page with server defaults. For lazy iteration over
+// every page, use [Service.ListAll].
 func (s *Service) List(ctx context.Context, req *ListRequest) (*transport.Response[ListResponse], error) {
 	path := listPath
 	if req != nil {

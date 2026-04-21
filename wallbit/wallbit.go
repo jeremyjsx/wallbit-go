@@ -25,6 +25,8 @@ import (
 	"github.com/jeremyjsx/wallbit-go/transport"
 )
 
+// ErrMissingAPIKey is returned by [NewClient] and [NewClientFromConfig]
+// when the supplied API key is empty or whitespace-only.
 var ErrMissingAPIKey = errors.New("wallbit client requires a non-empty api key")
 
 // ErrResponseTooLarge is returned by the client when an HTTP response body
@@ -39,36 +41,66 @@ var ErrResponseTooLarge = errors.New("wallbit client: response body exceeds conf
 // positive value.
 const DefaultMaxResponseBytes int64 = 10 << 20
 
+// Client is the top-level entrypoint for the Wallbit Go SDK. It owns the
+// configured [http.Client], retry policy and hooks, and exposes the
+// per-endpoint services as public fields. A Client is safe for concurrent
+// use once constructed via [NewClient] or [NewClientFromConfig].
 type Client struct {
 	apiKey string
 	cfg    *Config
 	sender transport.Sender
 
+	// Balance fetches fiat and equity balances.
 	Balance *balance.Service
 
+	// Transactions lists the authenticated user's transaction history,
+	// with filtering and lazy pagination via ListAll.
 	Transactions *transactions.Service
 
+	// APIKey manages the credential used by the client itself (currently
+	// only supports revocation).
 	APIKey *apikey.Service
 
+	// Trades places equity orders (market, limit, stop, …) against the
+	// user's stocks account.
 	Trades *trades.Service
 
+	// Fees returns the fee schedule for a given fee type.
 	Fees *fees.Service
 
+	// AccountDetails returns the bank account details used to fund or
+	// withdraw fiat from the user's Wallbit account.
 	AccountDetails *accountdetails.Service
 
+	// Wallets returns the user's deposit addresses, optionally filtered by
+	// currency or network.
 	Wallets *wallets.Service
 
+	// Assets looks up a single tradable instrument by symbol or lists the
+	// available catalogue with filters and lazy pagination via ListAll.
 	Assets *assets.Service
 
+	// Operations moves funds between the user's own accounts (default,
+	// investment, …).
 	Operations *operations.Service
 
+	// RoboAdvisor reads managed portfolios and moves funds in or out of
+	// them.
 	RoboAdvisor *roboadvisor.Service
 
+	// Cards lists the user's cards and toggles their status between
+	// ACTIVE and SUSPENDED.
 	Cards *cards.Service
 
+	// Rates fetches the current exchange rate for a currency pair.
 	Rates *rates.Service
 }
 
+// NewClient builds a [Client] authenticated with apiKey and configured by
+// the given options. It validates the resulting [Config] (base URL,
+// HTTPClient, retry policy) and returns [ErrMissingAPIKey] if apiKey is
+// blank. For configuration supplied as a single struct, use
+// [NewClientFromConfig] instead.
 func NewClient(apiKey string, opts ...Option) (*Client, error) {
 	if strings.TrimSpace(apiKey) == "" {
 		return nil, ErrMissingAPIKey
@@ -144,6 +176,9 @@ func wireServices(c *Client) {
 	c.Rates = rates.NewService(c.sender)
 }
 
+// Config returns the effective, validated configuration the client was
+// built with. The returned pointer is shared with the client and must not
+// be mutated; to change behaviour, build a new client instead.
 func (c *Client) Config() *Config {
 	return c.cfg
 }
@@ -188,7 +223,10 @@ func (c *Client) do(req *http.Request, dest any) (*transport.Metadata, error) {
 		c.emitRequestStart(reqTry, attemptNumber)
 
 		start := time.Now()
-		res, err := c.cfg.HTTPClient.Do(reqTry)
+		// The request URL is always built from a validated base URL
+		// (WithBaseURL rejects non-http(s)/relative URLs) plus a path
+		// chosen by the SDK; it is not attacker-controlled input.
+		res, err := c.cfg.HTTPClient.Do(reqTry) //nolint:gosec // G107: URL is SDK-controlled, not taint-sourced
 		dur := time.Since(start)
 
 		statusCode := 0
